@@ -1050,7 +1050,18 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 // 📷 ✨ เปิดกล้องหน้าความคมชัดสูงสไตล์เว็บภายนอก
 async function openModalByIndex(index) {
       currentItem = window.tempItems[index];
-      const infoHtml = `
+      
+      // ✨ ฟังก์ชันย่อยช่วยแกะและเรนเดอร์ HTML แท็กรูปภาพป้องกันข้อความดิบหลุดบนจอ
+      const renderModalPhoto = (photoStr) => {
+        if (!photoStr || photoStr === "-" || photoStr.indexOf("ไม่ได้แนบ") > -1 || photoStr.indexOf("กล้องขัดข้อง") > -1) {
+          return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
+        }
+        if (photoStr.indexOf("<img") > -1) return photoStr; // ถ้าส่งมาเป็นแท็กรูปภาพอยู่แล้วให้ปล่อยผ่าน
+        return `<img src="${photoStr}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+      };
+
+      // 🎨 1. ส่วนโครงสร้าง HTML ข้อมูลพัสดุหลัก
+      let infoHtml = `
         <div class="approval-info-box shadow-sm mb-3">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <div class="small"><b class="text-dark"><i class="bi bi-person-fill text-primary"></i> ${currentItem.userName}</b> <span class="ms-1 text-muted" style="font-size: 0.7rem;">ID: ${currentItem.empId}</span></div>
@@ -1067,22 +1078,57 @@ async function openModalByIndex(index) {
               </div>`).join('')}
           </div>
         </div>`;
+
+      // 🛡️ ✨ [ระบบ Timeline ตราประทับอัจฉริยะ] แสดงสถานะรูปถ่ายแบบ Dynamic ตามการอนุมัติจริงรายสเต็ป
+      infoHtml += `
+        <div class="approval-info-box shadow-sm mb-3 pt-2">
+          <div class="small fw-bold text-purple mb-2" style="color: #a31d8e !important;"><i class="bi bi-shield-check me-1"></i> ประวัติและสถานะการอนุมัติในบิลนี้</div>
+          <div class="row g-2 text-center justify-content-center">
+            
+            <div class="col-4 border-end ${(!currentItem.appr1 || !currentItem.appr1.name || currentItem.appr1.name === "-") ? 'opacity-25' : ''}">
+              <span class="d-block text-muted" style="font-size:0.65rem;"><b>หัวหน้าแผนก</b></span>
+              <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"}</b>
+              <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
+                ${renderModalPhoto(currentItem.appr1?.photo)}
+              </div>
+            </div>
+
+            <div class="col-4 border-end ${(!currentItem.appr2 || !currentItem.appr2.name || currentItem.appr2.name === "-") ? 'opacity-25' : ''}">
+              <span class="d-block text-muted" style="font-size:0.65rem;"><b>ผู้จัดการ</b></span>
+              <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"}</b>
+              <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
+                ${renderModalPhoto(currentItem.appr2?.photo)}
+              </div>
+            </div>
+
+            <div class="col-4 ${(!currentItem.appr3 || !currentItem.appr3.name || currentItem.appr3.name === "-") ? 'opacity-25' : ''}">
+              <span class="d-block text-muted" style="font-size:0.65rem;"><b>ผู้ควบคุมพัสดุ</b></span>
+              <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"}</b>
+              <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
+                ${renderModalPhoto(currentItem.appr3?.photo)}
+              </div>
+            </div>
+
+          </div>
+        </div>`;
+
       document.getElementById('modalItemInfoNew').innerHTML = infoHtml;
       
+      // 🛠️ 2. ส่วนควบคุมการเปิดฟอร์มกล้อง/ลายเซ็นสำหรับระดับที่กำลังต้องเซ็นปัจจุบัน
       ['step1', 'step2', 'step3'].forEach(id => { const el = document.getElementById('card-' + id); if (el) el.style.display = 'none'; });
+      
       if (currentItem.status === "รอหัวหน้าแผนก") { document.getElementById('card-step1').style.display = 'block'; }
       else if (currentItem.status === "รอผู้จัดการ") { document.getElementById('card-step2').style.display = 'block'; }
       else if (currentItem.status === "รอผู้ควบคุมพัสดุ") { document.getElementById('card-step3').style.display = 'block'; }
       
-      [sp1, sp2, sp3].forEach(p => p && p.clear());
-      
-      // ล้างสถานะภาพถ่ายเก่าทิ้งเพื่อเตรียมสแนปรูปใหม่
-      retakeSnapshot(); 
-      currentFacingMode = "user"; // รีเซ็ตระดับเลนส์กลับเป็นกล้องหน้าทุกครั้งที่เปิดขึ้นมาใหม่
-      
-      // สั่งเปิดใช้งานกล้อง
-      await initCamera(currentFacingMode);
+      if (["รอหัวหน้าแผนก", "รอผู้จัดการ", "รอผู้ควบคุมพัสดุ"].includes(currentItem.status)) {
+         [sp1, sp2, sp3].forEach(p => p && p.clear());
+         retakeSnapshot(); 
+         currentFacingMode = "user"; 
+         await initCamera(currentFacingMode);
+      }
 
+      // เปิดแสดงหน้าต่างป๊อปอัป Modal
       new bootstrap.Modal(document.getElementById('approveModal')).show();
       setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
 
@@ -1090,7 +1136,6 @@ async function openModalByIndex(index) {
       modalEl.removeEventListener('hidden.bs.modal', stopWebcamStream);
       modalEl.addEventListener('hidden.bs.modal', stopWebcamStream);
 }
-
     function stopWebcamStream() {
       if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
