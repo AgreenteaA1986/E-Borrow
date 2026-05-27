@@ -917,24 +917,29 @@
     // 🚀 บันทึกส่งคืนพัสดุแบบเจาะจงความปลอดภัยสูง (ใช้ Key ข้อมูลแทนเลขแถวกันบั๊กเลื่อนแถว)
     function confirmReturnFromDash(btn) {
       if (!selectedDashItem) return;
+      
+      // ดึงอินเด็กซ์รายการพัสดุทั้งหมดที่ผู้ใช้งานติ๊กถูกเลือกไว้บนหน้าจอ
       const selectedIndexes = Array.from(document.querySelectorAll('.dash-item-cb:checked')).map(cb => parseInt(cb.value));
       if (selectedIndexes.length === 0) { return alert("⚠️ กรุณาเลือกรายการที่ต้องการส่งคืน"); }
+      
       const originalText = btn.innerHTML;
       btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังดำเนินการ...';
       
+      // ดึงเอาเฉพาะข้อมูลรายการพัสดุชิ้นที่ติ๊กเลือกจริง ๆ มามัดรวมเข้าอาเรย์
       const selectedItems = selectedIndexes.map(idx => selectedDashItem.items[idx]);
       
+      // 🎯 [ไม้เด็ด] แปลงโครงสร้างส่งก้อนข้อมูลพาสเวิร์ดผูก ID แทนเลขแถวดิบหน้าบ้าน ป้องกันบั๊กข้อมูลสลับแถวเด็ดขาด
       const payloadData = { 
         action: "updateStatusToReturning", 
         payload: {
-          tsKey: selectedDashItem.tsKey,
+          tsKey: selectedDashItem.tsKey || (selectedDashItem.rows && selectedDashItem.rows[0] ? selectedDashItem.rows[0].toString() : ""),
           empId: selectedDashItem.empId,
           userName: selectedDashItem.userName,
           dept: selectedDashItem.dept,
           region: selectedDashItem.region,
           area: selectedDashItem.area,
           borrowDate: selectedDashItem.date,
-          items: selectedItems
+          items: selectedItems // ส่งพัสดุที่ติ๊กเลือกไปวนลูป
         }
       };
 
@@ -944,11 +949,13 @@
           if (res.success) {
             bootstrap.Modal.getInstance(document.getElementById('dashReturnModal')).hide();
             alert("✅ ส่งรายการพัสดุไปยังหน้า 'คืนพัสดุ' เรียบร้อยแล้ว");
-            updateDashboardStats(); loadDashboardList('completed'); updateNavBadges();
+            updateDashboardStats(); 
+            loadDashboardList('completed'); 
+            updateNavBadges();
           } else { alert("Error API: " + res.error); }
           btn.disabled = false; btn.innerHTML = originalText;
         }).catch(err => { alert("Error: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
-    }
+}
 
     function loadPendingList() {
       const list = document.getElementById('approval-list');
