@@ -935,17 +935,18 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันย่อยอัปเกรดเสร็จสมบูรณ์: ลายเซ็นสแตมป์ทับเส้นเขียวแม่นยำ และครอบวงเล็บชื่อสวยงาม
+            // ✨ ฟังก์ชันย่อยจูนพิกเซลพรีเมียม: เส้นดำบาง, ขยับลายเซ็นหนีเส้น, และยกเลิกตัวหนาตรงชื่อ/วันที่
             const createStampHTML = (appr, label) => {
               if (!appr || !appr.name || appr.name === "-") {
                 return `
                   <div class="stamp-box text-center opacity-25" style="padding: 5px;">
                     <span class="stamp-label fw-bold d-block text-secondary" style="font-size: 0.65rem;">${label}</span>
                     <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1" style="width: 65px; height: 80px; margin: 0 auto; background: #eef2f7; position: relative;"></div>
-                    <span class="stamp-name text-muted d-block" style="font-size: 0.7rem;">-</span>
+                    <span class="stamp-name text-muted d-block fw-normal" style="font-size: 0.7rem;">-</span>
                   </div>`;
               }
               
+              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy
               let fDate = "-";
               if (appr.date) {
                 const dObj = new Date(appr.date);
@@ -983,7 +984,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 
               let validPhoto = getDirectLink(appr.photo);
               
-              // ✍️ ดึงลิงก์ลายเซ็น (หากเป็นหัวหน้าแผนกให้สลับใช้รูปดาวของคุณโดยตรงผ่าน Proxy ป้องกันรูปแตก)
+              // ✍️ ดึงลิงก์ลายเซ็น (หากเป็นหัวหน้าแผนกให้ล็อกใช้รูปดาวโดยตรงผ่านลิงก์ Thumbnail ประมวลผลเสถียร)
               let validSig = "";
               if (label === "หัวหน้าแผนก") {
                 validSig = "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300";
@@ -993,28 +994,28 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 
               let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://f1f5f9';">`;
               
-              // ✍️ 🟢 [ปรับแต่งพิกัดขั้นสูงสุด] ย้ายตำแหน่งมาเกาะเส้นสีเขียว ปรับระยะ top ลอยขึ้นครึ่งบิลพอดี
+              // ✍️ 🟢 [ระบบคุมพิกัดลายเซ็นแสตมป์หนีเส้น] ปรับ Offset ดันรูปภาพขึ้นไปลอยเหนือเส้นดำพอดี ไม่ทับกัน
               let renderSigHTML = "";
               if (validSig && validSig !== "") {
-                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); width: 80px; height: 36px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
+                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
               } else {
-                renderSigHTML = `<div style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #28a745; font-family: monospace; font-size: 8px; font-weight: bold; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #28a745; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
+                renderSigHTML = `<div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #000; font-family: monospace; font-size: 8px; font-weight: normal; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #000; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
               }
 
               return `
                 <div class="stamp-box text-center" style="padding: 5px; position: relative;">
-                  <span class="stamp-label fw-bold d-block text-primary" style="font-size: 0.65rem; color: #a31d8e !important;">${label}</span>
+                  <span class="stamp-label fw-bold d-block text-primary" style="font-size: 0.65rem;">${label}</span>
                   
                   <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                     ${validPhoto ? renderPhotoHTML : `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:9px;" class="text-muted">No Pic</div>`}
                   </div>
                   
-                  <div class="position-relative mt-3 pt-1" style="border-top: 2px solid #28a745 !important; margin-top: 18px !important;">
+                  <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black !important; margin-top: 25px !important;">
                     ${renderSigHTML}
-                    <b class="stamp-name d-block text-dark truncate" style="font-size: 0.75rem; max-width: 85px; margin: 0 auto; position: relative; z-index: 2;">(${appr.name})</b>
+                    <span class="stamp-name d-block text-dark fw-normal truncate" style="font-size: 0.72rem; max-width: 85px; margin: 1px auto 0 auto; position: relative; z-index: 2;">(${appr.name})</span>
                   </div>
                   
-                  <span class="stamp-date d-block text-danger fw-bold" style="font-size: 0.62rem; margin-top: 2px;">📅 ${fDate}</span>
+                  <span class="stamp-date d-block text-danger fw-normal" style="font-size: 0.62rem; margin-top: 1px;">📅 ${fDate}</span>
                 </div>`;
             };
 
@@ -1039,7 +1040,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   <div class="bg-light rounded-3 p-2 mb-2">
                     ${item.items.map((p, i) => `
                       <div class="small mb-1 border-bottom border-white pb-1">
-                        <div class="text-dark" style="font-size: 0.8rem;"><b>${i + 1}.</b> ${p.itemName}</div>
+                        <div class="text-dark"><b>${i + 1}.</b> ${p.itemName}</div>
                         <div class="d-flex justify-content-between text-muted" style="font-size: 0.68rem; padding-left: 15px;"><span>รหัสพัสดุ: ${p.itemId}</span><span>จำนวน: <b class="text-primary">${p.itemQty}</b> ${p.itemUnit}</span></div>
                       </div>`).join('')}
                   </div>
