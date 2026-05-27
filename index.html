@@ -1050,37 +1050,42 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 async function openModalByIndex(index) {
       currentItem = window.tempItems[index];
       
-      // ✨ ฟังก์ชันย่อยระดับสูง: สกัด ID แล้วแปลงเป็นลิงก์ Thumbnail เพื่อทะลวงบล็อก CORS ของ Google Drive 100%
+      // ดูค่าที่ส่งมาจากหลังบ้านผ่าน Console ของเบราว์เซอร์เพื่อการตรวจสอบ
+      console.log("ข้อมูลผู้อนุมัติปัจจุบัน:", currentItem);
+      
+      // ✨ ฟังก์ชันย่อยอัปเกรดสูงสุด: รองรับทั้ง ลิงก์ตรง, ลิงก์ย่อ และแก้ปัญหารูปแตก
       const renderModalPhotoSafe = (rawStr) => {
         if (!rawStr || rawStr === "-" || rawStr.indexOf("ไม่ได้แนบ") > -1 || rawStr.indexOf("กล้องขัดข้อง") > -1) {
           return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
         }
         
-        // แกะเอาเฉพาะ URL ลิงก์ด้านในหากข้อมูลแอบติดแท็ก HTML มาจากระบบเก่า
-        let cleanUrl = rawStr;
-        if (rawStr.indexOf("src=") > -1) {
-          let match = rawStr.match(/src="([^"]+)"/);
+        let cleanUrl = String(rawStr).trim();
+        
+        // ถ้าข้อมูลแอบติดแท็ก HTML มาจากระบบเก่า ให้แกะเอาเฉพาะ URL ลิงก์ด้านในออกมา
+        if (cleanUrl.indexOf("src=") > -1) {
+          let match = cleanUrl.match(/src=["']([^"']+)["']/);
           if (match && match[1]) cleanUrl = match[1];
         }
         
-        // สกัดคัดแยกเฉพาะ File ID ออกมาเพื่อนำไปประกอบร่างลิงก์ที่เสถียรที่สุด
-        var fileId = "";
-        if (cleanUrl.indexOf("http") > -1 && cleanUrl.indexOf("drive.google.com") > -1) {
-          var matches = cleanUrl.match(/id=([^&]+)/);
+        // สกัด File ID ออกมาจากลิงก์ Google Drive ทุกรูปแบบ
+        let fileId = "";
+        if (cleanUrl.indexOf("drive.google.com") > -1) {
+          let matches = cleanUrl.match(/id=([^&]+)/);
           if (matches && matches[1]) { 
             fileId = matches[1]; 
           } else {
-            var parts = cleanUrl.split('/');
-            var dIndex = parts.indexOf('d');
+            let parts = cleanUrl.split('/');
+            let dIndex = parts.indexOf('d');
             if (dIndex !== -1 && parts[dIndex + 1]) { fileId = parts[dIndex + 1]; }
           }
         }
         
-        // 🎯 [ไม้ตายทะลวงภาพแตก] หากดึง ID สำเร็จ ให้บังคับใช้ลิงก์ส่องภาพแบบ /thumbnail แทน /uc? เพื่อความเสถียรสูงสุดบนหน้าเว็บแอป
+        // หากได้ File ID มา ให้เปลี่ยนไปใช้ลิงก์ Thumbnail ที่เสถียรและทะลวงสิทธิ์ CORS ได้ดีที่สุด
         if (fileId) {
-          cleanUrl = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300";
+          return `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w300" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://drive.google.com/uc?export=view&id=${fileId}';">`;
         }
         
+        // หากเป็นลิงก์ประเภทอื่น หรือเป็น Base64 ให้แสดงผลตรง ๆ
         return `<img src="${cleanUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
       };
 
@@ -1103,7 +1108,7 @@ async function openModalByIndex(index) {
           </div>
         </div>`;
 
-      // 🛡️ 2. สร้างโครงสร้าง Timeline ตราประทับแบบ Dynamic (แสดงรูปถ่ายรายสเต็ปแบบเรียลไทม์)
+      // 🛡️ 2. สร้างโครงสร้าง Timeline ตราประทับแบบ Dynamic
       infoHtml += `
         <div class="approval-info-box shadow-sm mb-3 pt-2">
           <div class="small fw-bold text-purple mb-2" style="color: #a31d8e !important;"><i class="bi bi-shield-check me-1"></i> ประวัติและสถานะการอนุมัติในบิลนี้</div>
@@ -1152,7 +1157,6 @@ async function openModalByIndex(index) {
          await initCamera(currentFacingMode);
       }
 
-      // เปิดแสดงหน้าต่างป๊อปอัป Modal
       new bootstrap.Modal(document.getElementById('approveModal')).show();
       setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
 
