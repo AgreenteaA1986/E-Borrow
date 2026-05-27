@@ -935,9 +935,8 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันย่อยอัปเกรดความสวยงามระดับพรีเมียม: จัดตำแหน่งลายเซ็นทับเส้นเขียว และใส่ข้อความวงเล็บครอบชื่อ
+            // ✨ ฟังก์ชันย่อยอัปเกรดเสร็จสมบูรณ์: ลายเซ็นสแตมป์ทับเส้นเขียวแม่นยำ และครอบวงเล็บชื่อสวยงาม
             const createStampHTML = (appr, label) => {
-              // กรณีที่ตำแหน่งนั้นยังไม่ได้อนุมัติ ให้แสดงโครงจางๆ ไว้รอคนมากดอนุมัติ
               if (!appr || !appr.name || appr.name === "-") {
                 return `
                   <div class="stamp-box text-center opacity-25" style="padding: 5px;">
@@ -947,7 +946,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   </div>`;
               }
               
-              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy ที่สวยงามใต้ลายเซ็น
               let fDate = "-";
               if (appr.date) {
                 const dObj = new Date(appr.date);
@@ -956,24 +954,19 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                 } else { fDate = appr.date; }
               }
               
-              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์อัจฉริยะ: รองรับสูตรสเปรดชีตและแปลงลิงก์เป็นรูปแบบทับบล็อกสิทธิ์ CORS
               const getDirectLink = (urlStr) => {
                 if (urlStr === null || urlStr === undefined) return "";
                 urlStr = String(urlStr).trim();
                 if (urlStr === "" || urlStr === "-") return "";
-                
-                // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอยได้ทันที
                 if (urlStr.indexOf("data:image") > -1) return urlStr;
                 
                 let cleanUrl = urlStr;
-                // สแกนหา URL จริงที่ซ่อนอยู่ในสูตรคำนวณของ Google Sheets
                 if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
                   let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
                   if (matchUrl) cleanUrl = matchUrl[0];
                   else return "";
                 }
 
-                // สกัดคัดแยกเฉพาะรหัส File ID 33 หลักออกจากลิงก์คลัง
                 let fileId = "";
                 let matchesId = cleanUrl.match(/id=([^&"'\s)]+)/);
                 if (matchesId && matchesId[1]) { 
@@ -985,15 +978,12 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                     fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0]; 
                   }
                 }
-
-                // สรุปถ้าได้ File ID มา ให้บังคับใช้ลิงก์ส่องภาพแบบ /thumbnail แทนเพื่อสยบบั๊ก CORS รูปแตกกระจุย
                 return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
               };
 
-              // ส่งลิงก์วิ่งผ่านระบบแกะรหัสอัจฉริยะ
               let validPhoto = getDirectLink(appr.photo);
               
-              // ✍️ ตรวจสอบเงื่อนไขเจาะจง: ถ้าระดับแรกคือ "หัวหน้าแผนก" ให้ล็อกใช้รหัส ID ลายเซ็นต์ภาพจริงตามที่คุณระบุมา
+              // ✍️ ดึงลิงก์ลายเซ็น (หากเป็นหัวหน้าแผนกให้สลับใช้รูปดาวของคุณโดยตรงผ่าน Proxy ป้องกันรูปแตก)
               let validSig = "";
               if (label === "หัวหน้าแผนก") {
                 validSig = "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300";
@@ -1001,15 +991,13 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                 validSig = getDirectLink(appr.sig);
               }
 
-              // 📸 ระบบตรวจสอบและเรนเดอร์แท็ก HTML ภาพถ่ายใบหน้า (คลีนบริสุทธิ์ ไม่มีลายเซ็นต์ฝังด้านใน)
               let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://f1f5f9';">`;
               
-              // ✍️ 🟢 [ระบบคุมพิกัดลายเซ็นแสตมป์ทับเส้นเขียว] ปรับค่า Offset ดันรูปภาพขึ้นไปลอยทับอยู่ส่วนกลางของเส้นพอดี
+              // ✍️ 🟢 [ปรับแต่งพิกัดขั้นสูงสุด] ย้ายตำแหน่งมาเกาะเส้นสีเขียว ปรับระยะ top ลอยขึ้นครึ่งบิลพอดี
               let renderSigHTML = "";
               if (validSig && validSig !== "") {
-                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 85%; height: 38px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
+                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: -24px; left: 50%; transform: translateX(-50%); width: 80px; height: 36px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
               } else {
-                // กรณีระดับอื่น ๆ ที่ยังไม่มีภาพลายเซ็นแนบมาในสเปรดชีต ให้ขึ้นข้อความระบบตราประทับสีเขียวสวยงามแทน
                 renderSigHTML = `<div style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #28a745; font-family: monospace; font-size: 8px; font-weight: bold; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #28a745; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
               }
 
