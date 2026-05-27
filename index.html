@@ -956,12 +956,16 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                 } else { fDate = appr.date; }
               }
               
-              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์จาก Google Drive อัตโนมัติ (สยบบั๊กภาพแตกจากต้นตอ)
+              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์จาก Google Drive อัตโนมัติ ปรับปรุงระบบป้องกันข้อมูลประเภทอื่นหลุดเข้ามาพังแอป
               const getDirectLink = (urlStr) => {
-                if (!urlStr || urlStr.indexOf("http") === -1) return "";
-                // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อรอเรนเดอร์
+                // 🛡️ ดักจับบั๊กสูงสุด: ถ้าไม่มีข้อมูล หรือเป็นค่าว่างเปล่าหลุดเข้ามา ให้รีเทิร์นว่างทันที ไม่เปิดสิทธิ์ให้รันคำสั่ง string พัง
+                if (urlStr === null || urlStr === undefined) return "";
+                urlStr = String(urlStr).trim(); // บังคับแปลงวัตถุทุกชนิดให้กลายเป็นข้อความ String ที่ปลอดภัย
+  
+                if (urlStr === "" || urlStr === "-" || urlStr.indexOf("http") === -1) return "";
+                // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอย
                 if (urlStr.indexOf("data:image") > -1) return urlStr;
-                
+  
                 var fileId = "";
                 // ท่าที่ 1: ถอดรหัสหา ID จากลิงก์รูปแบบพารามิเตอร์ ?id=
                 var matches = urlStr.match(/id=([^&]+)/);
