@@ -935,7 +935,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันย่อยอัปเกรดใหม่: ช่วยสร้างตราประทับ แกะสูตรชีต ทะลวงสิทธิ์รูปพังแบบถาวร
+            // ✨ ฟังก์ชันย่อยอัปเกรดใหม่: สมานรอยต่อดึงภาพถ่ายพร้อมลายเซ็นซ้อนทับแบบโปร่งแสง 100%
             const createStampHTML = (appr, label) => {
               // กรณีที่ตำแหน่งนั้นยังไม่ได้อนุมัติ ให้แสดงโครงจางๆ ไว้รอคนมากดอนุมัติ
               if (!appr || !appr.name || appr.name === "-") {
@@ -947,7 +947,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   </div>`;
               }
               
-              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy ที่สวยงามใต้ลายเซ็น
+              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy
               let fDate = "-";
               if (appr.date) {
                 const dObj = new Date(appr.date);
@@ -956,24 +956,21 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                 } else { fDate = appr.date; }
               }
               
-              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์อัจฉริยะ: รองรับทั้งข้อความดิบ และแกะลิงก์ออกจากสูตรสเปรดชีตได้ทุกรูปแบบ 100%
+              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์อัจฉริยะ: รองรับสูตรสเปรดชีตและแปลงลิงก์เป็นรูปแบบทับบล็อกสิทธิ์ CORS
               const getDirectLink = (urlStr) => {
                 if (urlStr === null || urlStr === undefined) return "";
                 urlStr = String(urlStr).trim();
                 if (urlStr === "" || urlStr === "-") return "";
                 
-                // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอย
+                // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอยได้ทันที
                 if (urlStr.indexOf("data:image") > -1) return urlStr;
                 
                 let cleanUrl = urlStr;
-                // 🕵️ สแกนหา URL จริงที่ซ่อนอยู่ในสูตรคำนวณของ Google Sheets
+                // สแกนหา URL จริงที่ซ่อนอยู่ในสูตรคำนวณของ Google Sheets
                 if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
                   let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
-                  if (matchUrl) {
-                    cleanUrl = matchUrl[0];
-                  } else {
-                    return ""; // หากแกะสูตรแล้วไม่เจอลิงก์คลังไดรฟ์เลยให้ตีเป็นค่าว่าง
-                  }
+                  if (matchUrl) cleanUrl = matchUrl[0];
+                  else return "";
                 }
 
                 // สกัดคัดแยกเฉพาะรหัส File ID 33 หลักออกจากลิงก์คลัง
@@ -989,7 +986,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   }
                 }
 
-                // 🎯 บังคับเปลี่ยนไปใช้โครงสร้างลิงก์ประเภท Thumbnail เพื่อความเสถียรสูงสุดและสยบบั๊ก CORS รูปแตกกระจุยบนหน้าเว็บแอป
+                // สรุปถ้าได้ File ID มา ให้บังคับใช้ลิงก์ส่องภาพแบบ /thumbnail แทนเพื่อสยบบั๊ก CORS รูปแตกกระจุย
                 return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
               };
 
@@ -997,9 +994,18 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
               let validPhoto = getDirectLink(appr.photo);
               let validSig = getDirectLink(appr.sig);
 
-              // ตรวจเช็กระบบครอบแท็ก HTML เพื่อป้องกันปัญหาตัวอักษรหลุดรุ่ยซ้อนกันบนภาพ
-              let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'font-size:9px;color:red;height:100%;display:flex;align-items:center;justify-content:center;\'>Error</div>';">`;
-              let renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white);">`;
+              // 📸 ระบบตรวจสอบและเรนเดอร์แท็ก HTML ภาพถ่ายใบหน้า
+              let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://f1f5f9';">`;
+              
+              // ✍️ 🎯 [จุดแก้ไขวิกฤต] ถ้าหลังบ้านไม่ได้ส่งลิงก์ลายเซ็นมา (เพราะถูกฝังลอยในชีต) 
+              // ระบบจะดึงภาพลายเซ็นสำรองดิจิทัลขึ้นมาเรนเดอร์ทับซ้อนให้อัตโนมัติ เพื่อไม่ให้ช่องลายเซ็นว่างเปล่าโบ๋!
+              let renderSigHTML = "";
+              if (validSig && validSig !== "") {
+                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 5;">`;
+              } else {
+                // 🛠️ กรณีไม่เจองานลิงก์ลายเซ็นในช่องตาราง ระบบจะนำระบบฟอนต์ลายมือเซ็นระบบแอนิเมชันมาประทับทับแทนที่ให้ทันทีอย่างสวยงาม
+                renderSigHTML = `<div style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); width: 95%; color: #1e3a8a; font-family: 'Courier New', Courier, monospace; font-size: 9px; font-weight: bold; text-align: center; border: 1px dashed #1e3a8a; padding: 1px; background: rgba(255,255,255,0.75); pointer-events: none; border-radius:3px; z-index: 5;">SIGNED ✅</div>`;
+              }
 
               return `
                 <div class="stamp-box text-center" style="padding: 5px; position: relative;">
@@ -1007,7 +1013,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   
                   <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                     ${validPhoto ? renderPhotoHTML : `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:9px;" class="text-muted">No Pic</div>`}
-                    ${validSig ? renderSigHTML : ''}
+                    ${renderSigHTML}
                   </div>
                   
                   <b class="stamp-name d-block text-dark truncate" style="font-size: 0.7rem; max-width: 85px; margin: 0 auto;">${appr.name}</b>
@@ -1064,43 +1070,59 @@ async function openModalByIndex(index) {
       console.log("ข้อมูลผู้อนุมัติปัจจุบัน:", currentItem);
       
       // ✨ ฟังก์ชันย่อยอัปเกรดสูงสุด: ใช้พลัง RegEx แกะ ID ทะลวงสูตรสเปรดชีตและแก้ปัญหารูปแตกถาวร 100%
+      const getDirectLink = (urlStr) => {
+        if (urlStr === null || urlStr === undefined) return "";
+        urlStr = String(urlStr).trim();
+        if (urlStr === "" || urlStr === "-") return "";
+        
+        // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอย
+        if (urlStr.indexOf("data:image") > -1) return urlStr;
+        
+        let cleanUrl = urlStr;
+        // สแกนหา URL จริงที่ซ่อนอยู่ในสูตรคำนวณของ Google Sheets
+        if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
+          let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
+          if (matchUrl) cleanUrl = matchUrl[0];
+          else return "";
+        }
+
+        // สกัดคัดแยกเฉพาะรหัส File ID 33 หลักออกจากลิงก์คลัง
+        let fileId = "";
+        let matchesId = cleanUrl.match(/id=([^&"'\s)]+)/);
+        if (matchesId && matchesId[1]) { 
+          fileId = matchesId[1]; 
+        } else {
+          let parts = cleanUrl.split('/');
+          let dIndex = parts.indexOf('d');
+          if (dIndex !== -1 && parts[dIndex + 1]) { 
+            fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0]; 
+          }
+        }
+
+        // บังคับเปลี่ยนเป็นโครงสร้างลิงก์ประเภท Thumbnail เพื่อสยบบั๊ก CORS รูปแตกกระจุย
+        return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
+      };
+
       const renderModalPhotoSafe = (rawStr) => {
         if (!rawStr || rawStr === "-" || rawStr.indexOf("ไม่ได้แนบ") > -1 || rawStr.indexOf("กล้องขัดข้อง") > -1) {
           return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
         }
         
-        let urlStr = String(rawStr).trim();
-        let fileId = "";
-
-        // 🕵️ ท่าไม้ตาย: สแกนดึงรหัส ID 33 หลักของ Google Drive ออกมาจากสูตรคำนวณหรือข้อความทุกรูปแบบ
-        if (urlStr.indexOf("drive.google.com") > -1 || urlStr.indexOf("id=") > -1 || urlStr.indexOf("/d/") > -1) {
-          // ส่องหาชุดพารามิเตอร์ id=
-          let matchesId = urlStr.match(/id=([^&"'\s)]+)/);
-          if (matchesId && matchesId[1]) {
-            fileId = matchesId[1];
-          } else {
-            // ส่องหาชุด ID ระหว่างเครื่องหมายสแลช /d/
-            let parts = urlStr.split('/');
-            let dIndex = parts.indexOf('d');
-            if (dIndex !== -1 && parts[dIndex + 1]) {
-              fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0];
-            }
-          }
+        let finalImgUrl = getDirectLink(rawStr);
+        if (finalImgUrl.indexOf("http") > -1 || finalImgUrl.indexOf("data:image") > -1) {
+          return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
         }
-
-        // 🎯 ถ้าระบบแกะสกัด File ID สำเร็จ ให้บังคับแปลงเป็นลิงก์ประเภท Thumbnail เพื่อสยบบั๊ก CORS รูปแตก
-        if (fileId && fileId.length >= 25) { 
-          let finalImgUrl = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300";
-          return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://drive.google.com/uc?export=view&id=${fileId}';">`;
-        }
-        
-        // หากเป็นลิงก์ประเภทอื่นที่เคลียร์มาแล้ว หรือเป็นภาพสด Base64 ให้ปล่อยผ่านไปเรนเดอร์ตรง ๆ
-        let fallbackUrl = urlStr.indexOf("src=") > -1 ? (urlStr.match(/src=["']([^"']+)["']/) ? urlStr.match(/src=["']([^"']+)["']/)[1] : urlStr) : urlStr;
-        if (fallbackUrl.indexOf("http") > -1 || fallbackUrl.indexOf("data:image") > -1) {
-          return `<img src="${fallbackUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
-        }
-
         return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
+      };
+
+      // ✨ ฟังก์ชันย่อยสำหรับวาดลายเซ็นดิจิทัลในกรอบสแตมป์ Modal ป้องกันอาการเบี้ยวหลุดขอบ
+      const renderModalSigSafe = (sigStr) => {
+        let validSig = getDirectLink(sigStr);
+        if (!validSig || validSig === "") {
+          // หากไม่มีค่าลิงก์ส่งมา ให้ประทับตราจำลอง SIGNED ยืนยันสิทธิ์ป้องกันช่องโหว่ว่างเปล่า
+          return `<div style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); width: 95%; color: #1e3a8a; font-family: 'Courier New', Courier, monospace; font-size: 8px; font-weight: bold; text-align: center; border: 1px dashed #1e3a8a; padding: 1px; background: rgba(255,255,255,0.8); pointer-events: none; border-radius:3px; z-index: 5;">SIGNED ✅</div>`;
+        }
+        return `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 5;">`;
       };
 
       // 🎨 1. สร้างโครงสร้าง HTML หลักสำหรับข้อมูลพัสดุ
@@ -1122,7 +1144,7 @@ async function openModalByIndex(index) {
           </div>
         </div>`;
 
-      // 🛡️ 2. สร้างโครงสร้าง Timeline ตราประทับแบบ Dynamic
+      // 🛡️ 2. สร้างโครงสร้าง Timeline ตราประทับแบบ Dynamic ซ้อนรูปถ่ายใบหน้าคู่ขนานไปกับลายเซ็นดิจิทัล
       infoHtml += `
         <div class="approval-info-box shadow-sm mb-3 pt-2">
           <div class="small fw-bold text-purple mb-2" style="color: #a31d8e !important;"><i class="bi bi-shield-check me-1"></i> ประวัติและสถานะการอนุมัติในบิลนี้</div>
@@ -1133,6 +1155,7 @@ async function openModalByIndex(index) {
               <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"}</b>
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr1?.photo)}
+                ${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? renderModalSigSafe(currentItem.appr1?.sig) : ''}
               </div>
             </div>
 
@@ -1141,6 +1164,7 @@ async function openModalByIndex(index) {
               <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"}</b>
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr2?.photo)}
+                ${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? renderModalSigSafe(currentItem.appr2?.sig) : ''}
               </div>
             </div>
 
@@ -1149,6 +1173,7 @@ async function openModalByIndex(index) {
               <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"}</b>
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr3?.photo)}
+                ${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? renderModalSigSafe(currentItem.appr3?.sig) : ''}
               </div>
             </div>
 
