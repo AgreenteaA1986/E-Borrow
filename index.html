@@ -1387,70 +1387,88 @@ async function openModalByIndex(index) {
     };
 
     function loadReturnList() {
-      const listDiv = document.getElementById('return-selector-list');
-      listDiv.innerHTML = '<div class="text-center p-4 small text-muted">กำลังโหลดข้อมูล...</div>';
+  const listDiv = document.getElementById('return-selector-list');
+  // 🔄 เปลี่ยนหน้ากาก Loading ให้เป็น Spinner หมุนแบบพรีเมียมสวยงามสไตล์เดียวกับหน้าอนุมัติ
+  listDiv.innerHTML = '<div class="text-center p-4 small text-muted"><div class="spinner-border text-info spinner-border-sm me-2"></div>กำลังโหลดรายการค้างคืน...</div>';
+  
+  fetch(`${GAS_URL}?action=getItemsToReturn`)
+    .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
+    .then(items => {
+      if (!items || items.length === 0) { 
+        listDiv.innerHTML = '<div class="p-4 text-center text-muted bg-white rounded-4 shadow-sm border">🎉 ไม่มีพัสดุค้างคืนในระบบ</div>'; 
+        return; 
+      }
       
-      fetch(`${GAS_URL}?action=getItemsToReturn`)
-        .then(res => res.json())
-        .then(items => {
-          if (!items || items.length === 0) { listDiv.innerHTML = '<div class="p-3 text-center text-muted">ไม่มีพัสดุค้างคืน</div>'; return; }
-          listDiv.innerHTML = items.map(item => `
-            <div class="item-card shadow-sm p-3 mb-3 bg-white rounded-4 animate-fade-in" onclick='selectItemToReturn(${JSON.stringify(item)})' style="cursor:pointer; border-left: 5px solid #0dcaf0;">
-              <div class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2">
-                <div>
-                  <b class="text-dark"><i class="bi bi-person-circle text-primary me-1"></i> ${item.userName}</b> <span class="small text-muted">(ID: ${item.empId})</span>
-                  <div class="d-flex flex-wrap gap-2 small text-muted mt-1" style="font-size: 0.78rem;">
-                    <div>🏢 <b>สังกัด:</b> ${item.dept || '-'}</div>
-                    <div class="text-secondary opacity-50">|</div>
-                    <div>🗺️ <b>ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
-                    <div class="text-secondary opacity-50">|</div>
-                    <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
-                  </div>
-                </div>
-                <div class="text-end" style="min-width: 120px;">
-                  <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.date}</div>
-                  <div class="small text-danger fw-bold mt-1" style="font-size: 0.7rem;">🕒 วันที่แจ้งคืน: ${item.returningDate || '-'}</div>
-                </div>
+      listDiv.innerHTML = items.map(item => `
+        <div class="item-card shadow-sm p-3 mb-3 bg-white rounded-4 animate-fade-in" onclick='selectItemToReturn(${JSON.stringify(item)})' style="cursor:pointer; border-left: 5px solid #0dcaf0;">
+          <div class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2">
+            <div>
+              <b class="text-dark"><i class="bi bi-person-circle text-primary me-1"></i> ${item.userName}</b> <span class="small text-muted">(ID: ${item.empId})</span>
+              <div class="d-flex flex-wrap gap-2 small text-muted mt-1" style="font-size: 0.78rem;">
+                <div>🏢 <b>สังกัด:</b> ${item.dept || '-'}</div>
+                <div class="text-secondary opacity-50">|</div>
+                <div>🗺️ <b>ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
+                <div class="text-secondary opacity-50">|</div>
+                <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
               </div>
-              <div class="small fw-bold text-info mb-1"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่ค้างคืน</div>
-              <div class="bg-light rounded-3 p-2 mb-2">
-                ${(item.items || []).map((p, i) => `
-                  <div class="d-flex justify-content-between small text-secondary border-bottom border-white pb-1 mb-1"><span><b>${i + 1}.</b> ${p.itemName}</span><span class="text-primary fw-bold">${p.itemQty} ${p.itemUnit}</span></div>`).join('')}
-              </div>
-              ${item.receiverName ? `
-                <div class="mt-2 p-2 rounded-3 border" style="background-color: #f0faff; border-style: dashed !important;">
-                   <div class="row g-0 small" style="font-size: 0.7rem;">
-                      <div class="col-4"><b>ผู้รับคืน:</b><br>${item.receiverName}</div>
-                      <div class="col-4 text-center"><b>ตำแหน่ง:</b><br>${item.receiverPos || 'เจ้าหน้าที่'}</div>
-                      <div class="col-4 text-end text-danger"><b>วันที่รับจริง:</b><br><b>${item.returningDate}</b></div>
-                   </div>
-                </div>` : `
-                <div class="text-center mt-2 small text-primary fw-bold"><i class="bi bi-pencil-square me-1"></i> คลิกเพื่อดำเนินการรับคืนพัสดุ ></div>`}
-            </div>`).join('');
-        }).catch(err => console.error("Error return list:", err));
-    }
+            </div>
+            <div class="text-end" style="min-width: 120px;">
+              <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.date}</div>
+              <div class="small text-danger fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-clock-history"></i> แจ้งคืนเมื่อ: ${item.date}</div>
+            </div>
+          </div>
+          
+          <div class="small fw-bold text-info mb-1"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่แจ้งส่งคืน</div>
+          <div class="bg-light rounded-3 p-2 mb-2">
+            ${(item.items || []).map((p, i) => `
+              <div class="d-flex justify-content-between small text-secondary border-bottom border-white pb-1 mb-1" style="border-color: #edf2f7 !important;">
+                <span><b>${i + 1}.</b> ${p.itemName} (รหัส: ${p.itemId})</span>
+                <span class="text-primary fw-bold">${p.itemQty} ${p.itemUnit}</span>
+              </div>`).join('')}
+          </div>
+          
+          ${item.receiverName ? `
+            <div class="mt-2 p-2 rounded-3 border" style="background-color: #f0faff; border-style: dashed !important;">
+               <div class="row g-0 small" style="font-size: 0.7rem;">
+                  <div class="col-4"><b>ผู้รับคืน:</b><br>${item.receiverName}</div>
+                  <div class="col-4 text-center"><b>ตำแหน่ง:</b><br>${item.receiverPos || 'เจ้าหน้าที่'}</div>
+                  <div class="col-4 text-end text-danger"><b>วันที่รับจริง:</b><br><b>${item.date}</b></div>
+               </div>
+            </div>` : `
+            <div class="text-center mt-2 small text-primary fw-bold"><i class="bi bi-camera-fill me-1"></i> คลิกเพื่อเปิดกล้องเว็บแคมและเซ็นรับคืนพัสดุ ></div>`}
+        </div>`).join('');
+    }).catch(err => {
+      console.error("Error return list:", err);
+      listDiv.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถโหลดรายการค้างคืนได้: ${err.message}</div>`;
+    });
+}
 
     function updateNavBadges() {
       fetch(`${GAS_URL}?action=getPendingApprovals`)
-        .then(res => res.json())
+        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
         .then(statsList => {
           const approveBadge = document.getElementById('nav-badge-approve');
           if (approveBadge) {
             if (statsList && statsList.length > 0) { approveBadge.innerText = statsList.length; approveBadge.style.display = 'flex'; }
             else { approveBadge.style.display = 'none'; }
           }
+          // 🔴 วิ่งไปอัปเดตยอดตัวเลขสีแดงของฝั่งคืนพัสดุต่อทันที
           updateReturnBadge();
         }).catch(err => console.error("Error nav approve badges:", err));
     }
 
     function updateReturnBadge() {
       fetch(`${GAS_URL}?action=getItemsToReturn`)
-        .then(res => res.json())
+        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
         .then(items => {
           const returnBadge = document.getElementById('nav-badge-return');
           if (returnBadge) {
-            if (items && items.length > 0) { returnBadge.innerText = items.length; returnBadge.style.display = 'flex'; }
-            else { returnBadge.style.display = 'none'; }
+            // ดึงจำนวนกลุ่มบิล (ความยาวอาเรย์) ที่รอเจ้าหน้าที่เซ็นรับคืนมาโชว์บนเบจสีแดง
+            if (items && items.length > 0) { 
+              returnBadge.innerText = items.length; 
+              returnBadge.style.display = 'flex'; // แสดงวงกลมสีแดงโชว์ตัวเลข
+            }
+            else { returnBadge.style.display = 'none'; } // ซ่อนไปถ้าไม่มีของค้างคืน
           }
         }).catch(err => console.error("Error nav return badges:", err));
     }
