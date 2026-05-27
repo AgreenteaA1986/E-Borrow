@@ -1050,30 +1050,35 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 async function openModalByIndex(index) {
       currentItem = window.tempItems[index];
       
-      // ✨ ฟังก์ชันย่อยระดับสูง: สกัดลิงก์สะอาดแล้วสร้างแท็ก <img> สด ๆ บนหน้าบ้าน ป้องกันอักษรหลุด 100%
+      // ✨ ฟังก์ชันย่อยระดับสูง: สกัด ID แล้วแปลงเป็นลิงก์ Thumbnail เพื่อทะลวงบล็อก CORS ของ Google Drive 100%
       const renderModalPhotoSafe = (rawStr) => {
         if (!rawStr || rawStr === "-" || rawStr.indexOf("ไม่ได้แนบ") > -1 || rawStr.indexOf("กล้องขัดข้อง") > -1) {
           return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
         }
         
-        // ถ้าข้อมูลแอบติดแท็ก HTML มาจากระบบเก่า ให้ทำการแกะเอาเฉพาะ URL ลิงก์ด้านในออกมา
+        // แกะเอาเฉพาะ URL ลิงก์ด้านในหากข้อมูลแอบติดแท็ก HTML มาจากระบบเก่า
         let cleanUrl = rawStr;
         if (rawStr.indexOf("src=") > -1) {
           let match = rawStr.match(/src="([^"]+)"/);
           if (match && match[1]) cleanUrl = match[1];
         }
         
-        // ตรวจจับและสกัด ID ให้เป็น Direct Link ที่เสถียรที่สุด
-        if (cleanUrl.indexOf("http") > -1 && cleanUrl.indexOf("drive.google.com") > -1 && cleanUrl.indexOf("uc?") === -1) {
-          var fileId = "";
+        // สกัดคัดแยกเฉพาะ File ID ออกมาเพื่อนำไปประกอบร่างลิงก์ที่เสถียรที่สุด
+        var fileId = "";
+        if (cleanUrl.indexOf("http") > -1 && cleanUrl.indexOf("drive.google.com") > -1) {
           var matches = cleanUrl.match(/id=([^&]+)/);
-          if (matches && matches[1]) { fileId = matches[1]; } 
-          else {
+          if (matches && matches[1]) { 
+            fileId = matches[1]; 
+          } else {
             var parts = cleanUrl.split('/');
             var dIndex = parts.indexOf('d');
             if (dIndex !== -1 && parts[dIndex + 1]) { fileId = parts[dIndex + 1]; }
           }
-          if (fileId) cleanUrl = "https://drive.google.com/uc?export=view&id=" + fileId;
+        }
+        
+        // 🎯 [ไม้ตายทะลวงภาพแตก] หากดึง ID สำเร็จ ให้บังคับใช้ลิงก์ส่องภาพแบบ /thumbnail แทน /uc? เพื่อความเสถียรสูงสุดบนหน้าเว็บแอป
+        if (fileId) {
+          cleanUrl = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300";
         }
         
         return `<img src="${cleanUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
@@ -1147,7 +1152,7 @@ async function openModalByIndex(index) {
          await initCamera(currentFacingMode);
       }
 
-      // สั่งเปิดแสดงหน้าต่างป๊อปอัป Modal เรนเดอร์ความสวยงามขึ้นจอ
+      // เปิดแสดงหน้าต่างป๊อปอัป Modal
       new bootstrap.Modal(document.getElementById('approveModal')).show();
       setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
 
