@@ -958,7 +958,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
               
               // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์จาก Google Drive อัตโนมัติ ปรับปรุงระบบป้องกันข้อมูลประเภทอื่นหลุดเข้ามาพังแอป
               const getDirectLink = (urlStr) => {
-                // 🛡️ ดักจับบั๊กสูงสุด: ถ้าไม่มีข้อมูล หรือเป็นค่าว่างเปล่าหลุดเข้ามา ให้รีเทิร์นว่างทันที ไม่เปิดสิทธิ์ให้รันคำสั่ง string พัง
                 if (urlStr === null || urlStr === undefined) return "";
                 urlStr = String(urlStr).trim(); // บังคับแปลงวัตถุทุกชนิดให้กลายเป็นข้อความ String ที่ปลอดภัย
   
@@ -987,13 +986,18 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
               let validPhoto = getDirectLink(appr.photo);
               let validSig = getDirectLink(appr.sig);
 
+              // 🛡️ ✨ [ดักจับบั๊กสูงสุดด่านสุดท้าย] เช็กว่าภาพที่ส่งมาจากหลังบ้าน มีการครอบแท็ก <img> มาแล้วหรือยัง
+              // ถ้าหลังบ้าน (GAS) ประกอบแท็กสำเร็จมาแล้ว ให้ปล่อยผ่านตัวแปรดิบออกไปเรนเดอร์ทันที ป้องกันอาการ text ดิบโชว์บนบราวเซอร์
+              let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`;
+              let renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white);">`;
+
               return `
                 <div class="stamp-box text-center" style="padding: 5px; position: relative;">
                   <span class="stamp-label fw-bold d-block text-primary" style="font-size: 0.65rem; color: #a31d8e !important;">${label}</span>
                   
                   <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
-                    ${validPhoto ? `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;">` : `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:9px;" class="text-muted">No Pic</div>`}
-                    ${validSig ? `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white);">` : ''}
+                    ${validPhoto ? renderPhotoHTML : `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:9px;" class="text-muted">No Pic</div>`}
+                    ${validSig ? renderSigHTML : ''}
                   </div>
                   
                   <b class="stamp-name d-block text-dark truncate" style="font-size: 0.7rem; max-width: 85px; margin: 0 auto;">${appr.name}</b>
