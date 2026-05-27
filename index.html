@@ -935,7 +935,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันย่อยอัปเกรดใหม่: สมานรอยต่อดึงภาพถ่ายพร้อมลายเซ็นซ้อนทับแบบโปร่งแสง 100%
+            // ✨ ฟังก์ชันย่อยอัปเกรดความสวยงามระดับพรีเมียม: จัดตำแหน่งลายเซ็นทับเส้นเขียว และใส่ข้อความวงเล็บครอบชื่อ
             const createStampHTML = (appr, label) => {
               // กรณีที่ตำแหน่งนั้นยังไม่ได้อนุมัติ ให้แสดงโครงจางๆ ไว้รอคนมากดอนุมัติ
               if (!appr || !appr.name || appr.name === "-") {
@@ -947,7 +947,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   </div>`;
               }
               
-              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy
+              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy ที่สวยงามใต้ลายเซ็น
               let fDate = "-";
               if (appr.date) {
                 const dObj = new Date(appr.date);
@@ -992,19 +992,25 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 
               // ส่งลิงก์วิ่งผ่านระบบแกะรหัสอัจฉริยะ
               let validPhoto = getDirectLink(appr.photo);
-              let validSig = getDirectLink(appr.sig);
+              
+              // ✍️ ตรวจสอบเงื่อนไขเจาะจง: ถ้าระดับแรกคือ "หัวหน้าแผนก" ให้ล็อกใช้รหัส ID ลายเซ็นต์ภาพจริงตามที่คุณระบุมา
+              let validSig = "";
+              if (label === "หัวหน้าแผนก") {
+                validSig = "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300";
+              } else {
+                validSig = getDirectLink(appr.sig);
+              }
 
-              // 📸 ระบบตรวจสอบและเรนเดอร์แท็ก HTML ภาพถ่ายใบหน้า
+              // 📸 ระบบตรวจสอบและเรนเดอร์แท็ก HTML ภาพถ่ายใบหน้า (คลีนบริสุทธิ์ ไม่มีลายเซ็นต์ฝังด้านใน)
               let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://f1f5f9';">`;
               
-              // ✍️ 🎯 [จุดแก้ไขวิกฤต] ถ้าหลังบ้านไม่ได้ส่งลิงก์ลายเซ็นมา (เพราะถูกฝังลอยในชีต) 
-              // ระบบจะดึงภาพลายเซ็นสำรองดิจิทัลขึ้นมาเรนเดอร์ทับซ้อนให้อัตโนมัติ เพื่อไม่ให้ช่องลายเซ็นว่างเปล่าโบ๋!
+              // ✍️ 🟢 [ระบบคุมพิกัดลายเซ็นแสตมป์ทับเส้นเขียว] ปรับค่า Offset ดันรูปภาพขึ้นไปลอยทับอยู่ส่วนกลางของเส้นพอดี
               let renderSigHTML = "";
               if (validSig && validSig !== "") {
-                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 5;">`;
+                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 85%; height: 38px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
               } else {
-                // 🛠️ กรณีไม่เจองานลิงก์ลายเซ็นในช่องตาราง ระบบจะนำระบบฟอนต์ลายมือเซ็นระบบแอนิเมชันมาประทับทับแทนที่ให้ทันทีอย่างสวยงาม
-                renderSigHTML = `<div style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); width: 95%; color: #1e3a8a; font-family: 'Courier New', Courier, monospace; font-size: 9px; font-weight: bold; text-align: center; border: 1px dashed #1e3a8a; padding: 1px; background: rgba(255,255,255,0.75); pointer-events: none; border-radius:3px; z-index: 5;">SIGNED ✅</div>`;
+                // กรณีระดับอื่น ๆ ที่ยังไม่มีภาพลายเซ็นแนบมาในสเปรดชีต ให้ขึ้นข้อความระบบตราประทับสีเขียวสวยงามแทน
+                renderSigHTML = `<div style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #28a745; font-family: monospace; font-size: 8px; font-weight: bold; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #28a745; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
               }
 
               return `
@@ -1013,11 +1019,14 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   
                   <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                     ${validPhoto ? renderPhotoHTML : `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:9px;" class="text-muted">No Pic</div>`}
-                    ${renderSigHTML}
                   </div>
                   
-                  <b class="stamp-name d-block text-dark truncate" style="font-size: 0.7rem; max-width: 85px; margin: 0 auto;">${appr.name}</b>
-                  <span class="stamp-date d-block text-danger fw-bold" style="font-size: 0.62rem; margin-top: 1px;">📅 ${fDate}</span>
+                  <div class="position-relative mt-3 pt-1" style="border-top: 2px solid #28a745 !important; margin-top: 18px !important;">
+                    ${renderSigHTML}
+                    <b class="stamp-name d-block text-dark truncate" style="font-size: 0.75rem; max-width: 85px; margin: 0 auto; position: relative; z-index: 2;">(${appr.name})</b>
+                  </div>
+                  
+                  <span class="stamp-date d-block text-danger fw-bold" style="font-size: 0.62rem; margin-top: 2px;">📅 ${fDate}</span>
                 </div>`;
             };
 
@@ -1065,28 +1074,21 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 
 async function openModalByIndex(index) {
       currentItem = window.tempItems[index];
-      
-      // ดูค่าที่ส่งมาจากหลังบ้านผ่าน Console ของเบราว์เซอร์เพื่อการตรวจสอบ
       console.log("ข้อมูลผู้อนุมัติปัจจุบัน:", currentItem);
       
-      // ✨ ฟังก์ชันย่อยอัปเกรดสูงสุด: ใช้พลัง RegEx แกะ ID ทะลวงสูตรสเปรดชีตและแก้ปัญหารูปแตกถาวร 100%
       const getDirectLink = (urlStr) => {
         if (urlStr === null || urlStr === undefined) return "";
         urlStr = String(urlStr).trim();
         if (urlStr === "" || urlStr === "-") return "";
-        
-        // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอย
         if (urlStr.indexOf("data:image") > -1) return urlStr;
         
         let cleanUrl = urlStr;
-        // สแกนหา URL จริงที่ซ่อนอยู่ในสูตรคำนวณของ Google Sheets
         if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
           let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
           if (matchUrl) cleanUrl = matchUrl[0];
           else return "";
         }
 
-        // สกัดคัดแยกเฉพาะรหัส File ID 33 หลักออกจากลิงก์คลัง
         let fileId = "";
         let matchesId = cleanUrl.match(/id=([^&"'\s)]+)/);
         if (matchesId && matchesId[1]) { 
@@ -1098,8 +1100,6 @@ async function openModalByIndex(index) {
             fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0]; 
           }
         }
-
-        // บังคับเปลี่ยนเป็นโครงสร้างลิงก์ประเภท Thumbnail เพื่อสยบบั๊ก CORS รูปแตกกระจุย
         return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
       };
 
@@ -1107,22 +1107,17 @@ async function openModalByIndex(index) {
         if (!rawStr || rawStr === "-" || rawStr.indexOf("ไม่ได้แนบ") > -1 || rawStr.indexOf("กล้องขัดข้อง") > -1) {
           return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
         }
-        
         let finalImgUrl = getDirectLink(rawStr);
-        if (finalImgUrl.indexOf("http") > -1 || finalImgUrl.indexOf("data:image") > -1) {
-          return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
-        }
-        return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
+        return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
       };
 
-      // ✨ ฟังก์ชันย่อยสำหรับวาดลายเซ็นดิจิทัลในกรอบสแตมป์ Modal ป้องกันอาการเบี้ยวหลุดขอบ
-      const renderModalSigSafe = (sigStr) => {
-        let validSig = getDirectLink(sigStr);
+      // ✍️ ฟังก์ชันสร้างแท็กลายเซ็นทับเส้นสำหรับหน้า Modal
+      const renderModalSigSafe = (sigStr, isLevel1) => {
+        let validSig = isLevel1 ? "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300" : getDirectLink(sigStr);
         if (!validSig || validSig === "") {
-          // หากไม่มีค่าลิงก์ส่งมา ให้ประทับตราจำลอง SIGNED ยืนยันสิทธิ์ป้องกันช่องโหว่ว่างเปล่า
-          return `<div style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%) rotate(-10deg); width: 95%; color: #1e3a8a; font-family: 'Courier New', Courier, monospace; font-size: 8px; font-weight: bold; text-align: center; border: 1px dashed #1e3a8a; padding: 1px; background: rgba(255,255,255,0.8); pointer-events: none; border-radius:3px; z-index: 5;">SIGNED ✅</div>`;
+          return `<div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-5deg); color: #28a745; font-family: monospace; font-size: 8px; font-weight: bold; background: rgba(255,255,255,0.85); padding: 1px 4px; border: 1px dashed #28a745; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
         }
-        return `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 5;">`;
+        return `<img src="${validSig}" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 90%; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
       };
 
       // 🎨 1. สร้างโครงสร้าง HTML หลักสำหรับข้อมูลพัสดุ
@@ -1144,7 +1139,7 @@ async function openModalByIndex(index) {
           </div>
         </div>`;
 
-      // 🛡️ 2. สร้างโครงสร้าง Timeline ตราประทับแบบ Dynamic ซ้อนรูปถ่ายใบหน้าคู่ขนานไปกับลายเซ็นดิจิทัล
+      // 🛡️ 2. ตราประทับเรียลไทม์ (รูปถ่ายคลีน + ลายเซ็นทับเส้นเขียว + วงเล็บชื่อ)
       infoHtml += `
         <div class="approval-info-box shadow-sm mb-3 pt-2">
           <div class="small fw-bold text-purple mb-2" style="color: #a31d8e !important;"><i class="bi bi-shield-check me-1"></i> ประวัติและสถานะการอนุมัติในบิลนี้</div>
@@ -1152,28 +1147,34 @@ async function openModalByIndex(index) {
             
             <div class="col-4 border-end ${(!currentItem.appr1 || !currentItem.appr1.name || currentItem.appr1.name === "-") ? 'opacity-25' : ''}">
               <span class="d-block text-muted" style="font-size:0.65rem;"><b>หัวหน้าแผนก</b></span>
-              <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"}</b>
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr1?.photo)}
-                ${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? renderModalSigSafe(currentItem.appr1?.sig) : ''}
+              </div>
+              <div class="position-relative mt-2 pt-1" style="border-top: 2px solid #28a745; margin-top: 15px !important;">
+                ${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? renderModalSigSafe(currentItem.appr1?.sig, true) : ''}
+                <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">(${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"})</b>
               </div>
             </div>
 
             <div class="col-4 border-end ${(!currentItem.appr2 || !currentItem.appr2.name || currentItem.appr2.name === "-") ? 'opacity-25' : ''}">
               <span class="d-block text-muted" style="font-size:0.65rem;"><b>ผู้จัดการ</b></span>
-              <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"}</b>
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr2?.photo)}
-                ${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? renderModalSigSafe(currentItem.appr2?.sig) : ''}
+              </div>
+              <div class="position-relative mt-2 pt-1" style="border-top: 2px solid #28a745; margin-top: 15px !important;">
+                ${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? renderModalSigSafe(currentItem.appr2?.sig, false) : ''}
+                <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">(${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"})</b>
               </div>
             </div>
 
             <div class="col-4 ${(!currentItem.appr3 || !currentItem.appr3.name || currentItem.appr3.name === "-") ? 'opacity-25' : ''}">
               <span class="d-block text-muted" style="font-size:0.65rem;"><b>ผู้ควบคุมพัสดุ</b></span>
-              <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"}</b>
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr3?.photo)}
-                ${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? renderModalSigSafe(currentItem.appr3?.sig) : ''}
+              </div>
+              <div class="position-relative mt-2 pt-1" style="border-top: 2px solid #28a745; margin-top: 15px !important;">
+                ${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? renderModalSigSafe(currentItem.appr3?.sig, false) : ''}
+                <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">(${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"})</b>
               </div>
             </div>
 
@@ -1182,9 +1183,8 @@ async function openModalByIndex(index) {
 
       document.getElementById('modalItemInfoNew').innerHTML = infoHtml;
       
-      // 🛠️ 3. ส่วนควบคุมสวิตช์ฟอร์มกล้องถ่ายรูป/ลายเซ็นตามคิวปัจจุบัน
+      // 🛠️ 3. ส่วนควบคุมสวิตช์ฟอร์มกล้องถ่ายรูป/ลายเซ็น
       ['step1', 'step2', 'step3'].forEach(id => { const el = document.getElementById('card-' + id); if (el) el.style.display = 'none'; });
-      
       if (currentItem.status === "รอหัวหน้าแผนก") { document.getElementById('card-step1').style.display = 'block'; }
       else if (currentItem.status === "รอผู้จัดการ") { document.getElementById('card-step2').style.display = 'block'; }
       else if (currentItem.status === "รอผู้ควบคุมพัสดุ") { document.getElementById('card-step3').style.display = 'block'; }
@@ -1198,10 +1198,6 @@ async function openModalByIndex(index) {
 
       new bootstrap.Modal(document.getElementById('approveModal')).show();
       setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
-
-      const modalEl = document.getElementById('approveModal');
-      modalEl.removeEventListener('hidden.bs.modal', stopWebcamStream);
-      modalEl.addEventListener('hidden.bs.modal', stopWebcamStream);
 }
     function stopWebcamStream() {
       if (webcamStream) {
