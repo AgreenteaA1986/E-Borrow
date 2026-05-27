@@ -935,7 +935,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันย่อยอัปเกรดใหม่: ช่วยสร้างตราประทับ สกัด ID และป้องกันภาพพังแตกแบบถาวร
+            // ✨ ฟังก์ชันย่อยอัปเกรดใหม่: ช่วยสร้างตราประทับ แกะสูตรชีต ทะลวงสิทธิ์รูปพังแบบถาวร
             const createStampHTML = (appr, label) => {
               // กรณีที่ตำแหน่งนั้นยังไม่ได้อนุมัติ ให้แสดงโครงจางๆ ไว้รอคนมากดอนุมัติ
               if (!appr || !appr.name || appr.name === "-") {
@@ -956,39 +956,49 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                 } else { fDate = appr.date; }
               }
               
-              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์จาก Google Drive อัตโนมัติ ปรับปรุงระบบป้องกันข้อมูลประเภทอื่นหลุดเข้ามาพังแอป
+              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์อัจฉริยะ: รองรับทั้งข้อความดิบ และแกะลิงก์ออกจากสูตรสเปรดชีตได้ทุกรูปแบบ 100%
               const getDirectLink = (urlStr) => {
                 if (urlStr === null || urlStr === undefined) return "";
-                urlStr = String(urlStr).trim(); // บังคับแปลงวัตถุทุกชนิดให้กลายเป็นข้อความ String ที่ปลอดภัย
-  
-                if (urlStr === "" || urlStr === "-" || urlStr.indexOf("http") === -1) return "";
+                urlStr = String(urlStr).trim();
+                if (urlStr === "" || urlStr === "-") return "";
+                
                 // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อนำไปวาดภาพลอย
                 if (urlStr.indexOf("data:image") > -1) return urlStr;
-  
-                var fileId = "";
-                // ท่าที่ 1: ถอดรหัสหา ID จากลิงก์รูปแบบพารามิเตอร์ ?id=
-                var matches = urlStr.match(/id=([^&]+)/);
-                if (matches && matches[1]) {
-                  fileId = matches[1];
-                } else {
-                  // ท่าที่ 2: ถอดรหัสหา ID จากลิงก์รูปแบบเส้นทาง /d/
-                  var parts = urlStr.split('/');
-                  var dIndex = parts.indexOf('d');
-                  if (dIndex !== -1 && parts[dIndex + 1]) {
-                    fileId = parts[dIndex + 1];
+                
+                let cleanUrl = urlStr;
+                // 🕵️ สแกนหา URL จริงที่ซ่อนอยู่ในสูตรคำนวณของ Google Sheets
+                if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
+                  let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
+                  if (matchUrl) {
+                    cleanUrl = matchUrl[0];
+                  } else {
+                    return ""; // หากแกะสูตรแล้วไม่เจอลิงก์คลังไดรฟ์เลยให้ตีเป็นค่าว่าง
                   }
                 }
-                // สรุปถ้าดึง ID สำเร็จ ให้บังคับแปลงเป็นรูปแบบ Direct Link ที่เบราว์เซอร์อ่านได้ 100%
-                return fileId ? "https://drive.google.com/uc?export=view&id=" + fileId : urlStr;
+
+                // สกัดคัดแยกเฉพาะรหัส File ID 33 หลักออกจากลิงก์คลัง
+                let fileId = "";
+                let matchesId = cleanUrl.match(/id=([^&"'\s)]+)/);
+                if (matchesId && matchesId[1]) { 
+                  fileId = matchesId[1]; 
+                } else {
+                  let parts = cleanUrl.split('/');
+                  let dIndex = parts.indexOf('d');
+                  if (dIndex !== -1 && parts[dIndex + 1]) { 
+                    fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0]; 
+                  }
+                }
+
+                // 🎯 บังคับเปลี่ยนไปใช้โครงสร้างลิงก์ประเภท Thumbnail เพื่อความเสถียรสูงสุดและสยบบั๊ก CORS รูปแตกกระจุยบนหน้าเว็บแอป
+                return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
               };
 
-              // นำค่าลิงก์ในตารางมาวิ่งผ่านฟังก์ชันแปลงรหัสเพื่อความปลอดภัยในการโหลดภาพ
+              // ส่งลิงก์วิ่งผ่านระบบแกะรหัสอัจฉริยะ
               let validPhoto = getDirectLink(appr.photo);
               let validSig = getDirectLink(appr.sig);
 
-              // 🛡️ ✨ [ดักจับบั๊กสูงสุดด่านสุดท้าย] เช็กว่าภาพที่ส่งมาจากหลังบ้าน มีการครอบแท็ก <img> มาแล้วหรือยัง
-              // ถ้าหลังบ้าน (GAS) ประกอบแท็กสำเร็จมาแล้ว ให้ปล่อยผ่านตัวแปรดิบออกไปเรนเดอร์ทันที ป้องกันอาการ text ดิบโชว์บนบราวเซอร์
-              let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`;
+              // ตรวจเช็กระบบครอบแท็ก HTML เพื่อป้องกันปัญหาตัวอักษรหลุดรุ่ยซ้อนกันบนภาพ
+              let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'font-size:9px;color:red;height:100%;display:flex;align-items:center;justify-content:center;\'>Error</div>';">`;
               let renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: auto; pointer-events: none; filter: drop-shadow(1px 1px 1px white);">`;
 
               return `
@@ -1053,40 +1063,44 @@ async function openModalByIndex(index) {
       // ดูค่าที่ส่งมาจากหลังบ้านผ่าน Console ของเบราว์เซอร์เพื่อการตรวจสอบ
       console.log("ข้อมูลผู้อนุมัติปัจจุบัน:", currentItem);
       
-      // ✨ ฟังก์ชันย่อยอัปเกรดสูงสุด: รองรับทั้ง ลิงก์ตรง, ลิงก์ย่อ และแก้ปัญหารูปแตก
+      // ✨ ฟังก์ชันย่อยอัปเกรดสูงสุด: ใช้พลัง RegEx แกะ ID ทะลวงสูตรสเปรดชีตและแก้ปัญหารูปแตกถาวร 100%
       const renderModalPhotoSafe = (rawStr) => {
         if (!rawStr || rawStr === "-" || rawStr.indexOf("ไม่ได้แนบ") > -1 || rawStr.indexOf("กล้องขัดข้อง") > -1) {
           return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
         }
         
-        let cleanUrl = String(rawStr).trim();
-        
-        // ถ้าข้อมูลแอบติดแท็ก HTML มาจากระบบเก่า ให้แกะเอาเฉพาะ URL ลิงก์ด้านในออกมา
-        if (cleanUrl.indexOf("src=") > -1) {
-          let match = cleanUrl.match(/src=["']([^"']+)["']/);
-          if (match && match[1]) cleanUrl = match[1];
-        }
-        
-        // สกัด File ID ออกมาจากลิงก์ Google Drive ทุกรูปแบบ
+        let urlStr = String(rawStr).trim();
         let fileId = "";
-        if (cleanUrl.indexOf("drive.google.com") > -1) {
-          let matches = cleanUrl.match(/id=([^&]+)/);
-          if (matches && matches[1]) { 
-            fileId = matches[1]; 
+
+        // 🕵️ ท่าไม้ตาย: สแกนดึงรหัส ID 33 หลักของ Google Drive ออกมาจากสูตรคำนวณหรือข้อความทุกรูปแบบ
+        if (urlStr.indexOf("drive.google.com") > -1 || urlStr.indexOf("id=") > -1 || urlStr.indexOf("/d/") > -1) {
+          // ส่องหาชุดพารามิเตอร์ id=
+          let matchesId = urlStr.match(/id=([^&"'\s)]+)/);
+          if (matchesId && matchesId[1]) {
+            fileId = matchesId[1];
           } else {
-            let parts = cleanUrl.split('/');
+            // ส่องหาชุด ID ระหว่างเครื่องหมายสแลช /d/
+            let parts = urlStr.split('/');
             let dIndex = parts.indexOf('d');
-            if (dIndex !== -1 && parts[dIndex + 1]) { fileId = parts[dIndex + 1]; }
+            if (dIndex !== -1 && parts[dIndex + 1]) {
+              fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0];
+            }
           }
         }
-        
-        // หากได้ File ID มา ให้เปลี่ยนไปใช้ลิงก์ Thumbnail ที่เสถียรและทะลวงสิทธิ์ CORS ได้ดีที่สุด
-        if (fileId) {
-          return `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w300" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://drive.google.com/uc?export=view&id=${fileId}';">`;
+
+        // 🎯 ถ้าระบบแกะสกัด File ID สำเร็จ ให้บังคับแปลงเป็นลิงก์ประเภท Thumbnail เพื่อสยบบั๊ก CORS รูปแตก
+        if (fileId && fileId.length >= 25) { 
+          let finalImgUrl = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300";
+          return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://drive.google.com/uc?export=view&id=${fileId}';">`;
         }
         
-        // หากเป็นลิงก์ประเภทอื่น หรือเป็น Base64 ให้แสดงผลตรง ๆ
-        return `<img src="${cleanUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+        // หากเป็นลิงก์ประเภทอื่นที่เคลียร์มาแล้ว หรือเป็นภาพสด Base64 ให้ปล่อยผ่านไปเรนเดอร์ตรง ๆ
+        let fallbackUrl = urlStr.indexOf("src=") > -1 ? (urlStr.match(/src=["']([^"']+)["']/) ? urlStr.match(/src=["']([^"']+)["']/)[1] : urlStr) : urlStr;
+        if (fallbackUrl.indexOf("http") > -1 || fallbackUrl.indexOf("data:image") > -1) {
+          return `<img src="${fallbackUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+        }
+
+        return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
       };
 
       // 🎨 1. สร้างโครงสร้าง HTML หลักสำหรับข้อมูลพัสดุ
