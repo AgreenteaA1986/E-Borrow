@@ -147,7 +147,7 @@
     transform: translate(-50%, -50%);
     width: 90%;
     height: auto;
-    filter: drop-shadow(0 0 1px white); /* เพิ่มเงาให้ลายเซ็นชัดขึ้นบนรูป */
+    filter: drop-shadow(0 0 1px white);
   }
   .stamp-label { font-size: 0.65rem; font-weight: bold; color: var(--primary-color); display: block; }
   .stamp-name { font-size: 0.7rem; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
@@ -390,7 +390,7 @@
   <div class="modal fade" id="returnModal" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 rounded-4 shadow">
-        <div class="modal-header border-0 pb-0"><h6 class="fw-bold mb-0">📦 บันทึกการรับคืนพัสดุ</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header border-0 pb-0"><h6 class="fw-bold mb-0">📦 บันทึกการรับคืนพัสดุ</h6><button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopReturnWebcam()"></button></div>
         <div class="modal-body p-4 pt-2">
           <div id="returnItemInfo"></div>
           <div class="mb-3">
@@ -401,6 +401,22 @@
             <input type="hidden" id="retRow">
             <div class="mb-3"><label class="small fw-bold text-primary mb-1">วันที่คืน</label><input type="date" id="retDate" class="form-control mb-2" required></div>
             <div class="mb-3"><label class="small fw-bold text-primary mb-1">ชื่อผู้รับคืน</label><input type="text" id="retReceiver" placeholder="ชื่อ-นามสกุล ผู้รับคืน" class="form-control mb-2" required></div>
+            
+            <div class="mb-3 text-center">
+              <label class="form-label small fw-bold text-primary d-block text-start"><i class="bi bi-camera-fill me-1"></i> กล้องถ่ายรูปผู้รับคืน (Face Verification)</label>
+              <div class="bg-dark rounded-4 overflow-hidden position-relative shadow-sm" style="width: 100%; max-width: 320px; height: 240px; margin: 0 auto;">
+                <video id="retWebcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <div id="ret-snapshot-overlay" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; background: #000;">
+                  <img id="ret-snapshot-img" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+              </div>
+              <div class="d-flex justify-content-center gap-2 mt-2">
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="takeReturnSnapshot()"><i class="bi bi-camera"></i> กดถ่ายรูป</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeReturnSnapshot()"><i class="bi bi-arrow-counterclockwise"></i> ถ่ายใหม่</button>
+              </div>
+              <canvas id="return-capture-canvas" style="display: none;"></canvas>
+            </div>
+
             <div class="mb-4">
               <label class="small fw-bold text-primary mb-1">ลายเซ็นผู้รับคืน</label>
               <div class="sig-wrapper"><canvas id="pad-return"></canvas><div class="text-end p-1"><button type="button" class="btn btn-sm text-danger border-0" onclick="spReturn.clear()">ล้าง</button></div></div>
@@ -417,7 +433,7 @@
       <div class="modal-content border-0 rounded-4 shadow">
         <div class="modal-header border-0 pb-0">
           <h6 class="fw-bold mb-0">✒️ เซ็นอนุมัติพัสดุ</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopWebcamStream()"></button>
         </div>
         <div class="modal-body p-4 pt-2">
           <div id="modalItemInfoNew"></div>
@@ -497,15 +513,15 @@
   </div>
 
   <script>
-    // 🔗 ผูกเชื่อมโยงข้อมูลตรงเข้าหาลิงก์ URL API จริงที่อัปเดตใหม่
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rTudR1XKaGOcNA5eRj3ZtNFFlwEy87QASPgIM5buO0SNxW/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rTudR1XKaGOcNA5eRj3ZtNFFlwEy87QASPgIM5buO0SNxW/exec";
 
     const sp1 = new SignaturePad(document.getElementById('pad1'));
     const sp2 = new SignaturePad(document.getElementById('pad2'));
     const sp3 = new SignaturePad(document.getElementById('pad3'));
     const spReturn = new SignaturePad(document.getElementById('pad-return'));
-    let currentFacingMode = "user"; // เริ่มต้นด้วยกล้องหน้า ('user' = กล้องหน้า, 'environment' = กล้องหลัง)
-    let capturedPhotoBase64 = null; // เก็บสตริงรูปถ่ายหลังกดชัตเตอร์
+    let currentFacingMode = "user";
+    let capturedPhotoBase64 = null; 
+    let returnPhotoBase64 = null; // เก็บภาพก้อนของคนรับคืน
     let currentItem = null;
     let currentInventoryData = [];
     let activeRowElement = null;
@@ -514,6 +530,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
     let lastDashboardType = 'pending'; 
     let currentSelectedRegion = 'ทั้งหมด';
     let webcamStream = null;
+    let returnWebcamStream = null;
 
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
@@ -535,7 +552,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       else if (pageId === 'page-return') loadReturnList();
     }
 
-    // 🚀 เปลี่ยนมาใช้ fetch GET API สำหรับเรียกสถิติคลังพัสดุบน Netlify
     function loadInventoryStats() {
       fetch(`${GAS_URL}?action=getInventorySummary`)
         .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
@@ -661,7 +677,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       container.appendChild(div);
     }
 
-    // 🚀 เปลี่ยนมาใช้ fetch POST API สำหรับส่งเอกสารใบยืมพัสดุขึ้น Netlify
     document.getElementById('borrowForm').onsubmit = function(e) {
       e.preventDefault();
       const btn = e.target.querySelector('button[type="submit"]');
@@ -699,7 +714,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       } catch (err) { alert("เกิดข้อผิดพลาดภายในแอป: " + err.message); btn.disabled = false; }
     };
 
-    // 🚀 เปลี่ยนมาใช้ fetch GET API ดึงจำนวนสถิติตัวเลข Dashboard หน้าแรก
     function updateDashboardStats() {
       fetch(`${GAS_URL}?action=getDashboardStats&region=${encodeURIComponent(currentSelectedRegion)}`)
         .then(res => res.json())
@@ -713,7 +727,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
         }).catch(err => console.error("Error dash stats:", err));
     }
 
-    // 🚀 เปลี่ยนมาใช้ fetch GET API ดึงตารางประวัติหน้าแรกบน Netlify
     function loadDashboardList(type) {
       lastDashboardType = type; 
       const listDiv = document.getElementById('dashboard-list');
@@ -727,81 +740,81 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
             return; 
           }
         
-        let html = `
-          <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white animate-fade-in">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0" style="font-size: 0.82rem;">
-                <thead class="table-light text-secondary fw-bold" style="background-color: #f8f9fa; border-bottom: 1px solid #edf2f7; white-space: nowrap;">
-                  <tr>
-                    <th class="ps-4 py-3">ชื่อผู้ยืม</th>
-                    <th class="py-3">รหัสพนักงาน</th>
-                    <th class="py-3">สังกัด</th>
-                    <th class="py-3">ภาค</th>
-                    <th class="py-3">เขต</th>
-                    <th class="py-3">รหัสพัสดุ</th>
-                    <th class="py-3">ชื่อพัสดุ</th>
-                    <th class="py-3">จำนวน</th>
-                    <th class="py-3">วันที่ยืม</th>
-                    <th class="py-3">วันที่อนุมัต</th>
-                    <th class="py-3">วันที่ส่งคืน</th>
-                    <th class="py-3">วันที่รับคืน</th>
-                    <th class="pe-4 py-3 text-end">สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody style="white-space: nowrap;">
-        `;
+          let html = `
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white animate-fade-in">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                  <thead class="table-light text-secondary fw-bold" style="background-color: #f8f9fa; border-bottom: 1px solid #edf2f7; white-space: nowrap;">
+                    <tr>
+                      <th class="ps-4 py-3">ชื่อผู้ยืม</th>
+                      <th class="py-3">รหัสพนักงาน</th>
+                      <th class="py-3">สังกัด</th>
+                      <th class="py-3">ภาค</th>
+                      <th class="py-3">เขต</th>
+                      <th class="py-3">รหัสพัสดุ</th>
+                      <th class="py-3">ชื่อพัสดุ</th>
+                      <th class="py-3">จำนวน</th>
+                      <th class="py-3">วันที่ยืม</th>
+                      <th class="py-3">วันที่อนุมัติ</th>
+                      <th class="py-3">วันที่ส่งคืน</th>
+                      <th class="py-3">วันที่รับคืน</th>
+                      <th class="pe-4 py-3 text-end">สถานะ</th>
+                    </tr>
+                  </thead>
+                  <tbody style="white-space: nowrap;">
+          `;
 
-        items.forEach((group) => {
-          let isReturned = (group.status === "คืนแล้ว");
-          let isComplete = (group.status === "อนุมัติสมบูรณ์");
-          
-          let badgeStyle = "";
-          if (isReturned) badgeStyle = "background-color: #e2e8f0; color: #475569;";
-          else if (isComplete) badgeStyle = "background-color: #d1fae5; color: #065f46;";
-          else if (group.status === "กำลังส่งคืน") badgeStyle = "background-color: #e0f2fe; color: #0369a1;";
-          else if (group.status === "รอผู้จัดการ" || group.status === "รอผู้ควบคุมพัสดุ") badgeStyle = "background-color: #dbeafe; color: #1e40af;";
-          else badgeStyle = "background-color: #fef3c7; color: #92400e;"; 
+          items.forEach((group) => {
+            let isReturned = (group.status === "คืนแล้ว");
+            let isComplete = (group.status === "อนุมัติสมบูรณ์");
+            
+            let badgeStyle = "";
+            if (isReturned) badgeStyle = "background-color: #e2e8f0; color: #475569;";
+            else if (isComplete) badgeStyle = "background-color: #d1fae5; color: #065f46;";
+            else if (group.status === "กำลังส่งคืน") badgeStyle = "background-color: #e0f2fe; color: #0369a1;";
+            else if (group.status === "รอผู้จัดการ" || group.status === "รอผู้ควบคุมพัสดุ") badgeStyle = "background-color: #dbeafe; color: #1e40af;";
+            else badgeStyle = "background-color: #fef3c7; color: #92400e;"; 
 
-          let rowOverdueClass = group.isOverdue ? 'style="background-color: #fff5f5;" class="table-danger"' : '';
-          let overdueBadge = group.isOverdue ? '<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">⚠️ เกิน 7 วัน</span>' : '';
+            let rowOverdueClass = group.isOverdue ? 'style="background-color: #fff5f5;" class="table-danger"' : '';
+            let overdueBadge = group.isOverdue ? '<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">⚠️ เกิน 7 วัน</span>' : '';
 
-          group.items.forEach((item, index) => {
-            html += `
-              <tr ${rowOverdueClass} onclick='openDashReturnModal(${JSON.stringify(group)})' style="cursor: pointer;">
-                <td class="ps-4 py-3 fw-bold text-dark">${index === 0 ? group.userName : `<span class="text-muted opacity-50">”</span>`}</td>
-                <td class="py-3 text-muted">${index === 0 ? group.empId : ""}</td>
-                <td class="py-3 text-dark">${index === 0 ? (group.dept || "-") : ""}</td>
-                <td class="py-3 text-secondary">${index === 0 ? (group.region || "-") : ""}</td>
-                <td class="py-3 text-secondary">${index === 0 ? (group.area || "-") : ""}</td>
-                
-                <td class="py-3 text-mono font-monospace" style="font-size: 0.78rem;">${item.itemId}</td>
-                <td class="py-3 fw-bold text-dark text-wrap">${item.itemName}</td>
-                <td class="py-3">
-                  <span class="fw-bold text-primary">${item.itemQty}</span>
-                  <small class="text-muted">${item.itemUnit || "หน่วย"}</small>
-                </td>
-                
-                <td class="py-3 text-secondary">${index === 0 ? group.date : ""}</td>
-                <td class="py-3 text-secondary">${index === 0 ? group.approveDate : ""}</td>
-                <td class="py-3 text-secondary">${index === 0 ? group.returnDate : ""}</td>
-                <td class="py-3 text-secondary">${index === 0 ? group.receiveDate : ""}</td>
-                
-                <td class="pe-4 py-3 text-end">
-                  ${index === 0 ? `
-                    <span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="font-size: 0.7rem; ${badgeStyle}">
-                      ${group.status}
-                    </span>
-                    ${overdueBadge}
-                  ` : ""}
-                </td>
-              </tr>
-            `;
+            group.items.forEach((item, index) => {
+              html += `
+                <tr ${rowOverdueClass} onclick='openDashReturnModal(${JSON.stringify(group)})' style="cursor: pointer;">
+                  <td class="ps-4 py-3 fw-bold text-dark">${index === 0 ? group.userName : `<span class="text-muted opacity-50">”</span>`}</td>
+                  <td class="py-3 text-muted">${index === 0 ? group.empId : ""}</td>
+                  <td class="py-3 text-dark">${index === 0 ? (group.dept || "-") : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? (group.region || "-") : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? (group.area || "-") : ""}</td>
+                  
+                  <td class="py-3 text-mono font-monospace" style="font-size: 0.78rem;">${item.itemId}</td>
+                  <td class="py-3 fw-bold text-dark text-wrap">${item.itemName}</td>
+                  <td class="py-3">
+                    <span class="fw-bold text-primary">${item.itemQty}</span>
+                    <small class="text-muted">${item.itemUnit || "หน่วย"}</small>
+                  </td>
+                  
+                  <td class="py-3 text-secondary">${index === 0 ? group.date : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? group.approveDate : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? group.returnDate : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? group.receiveDate : ""}</td>
+                  
+                  <td class="pe-4 py-3 text-end">
+                    ${index === 0 ? `
+                      <span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="font-size: 0.7rem; ${badgeStyle}">
+                        ${group.status}
+                      </span>
+                      ${overdueBadge}
+                    ` : ""}
+                  </td>
+                </tr>
+              `;
+            });
           });
-        });
-        
-        html += `</tbody></table></div></div>`;
-        listDiv.innerHTML = html;
-      }).catch(err => console.error("Error listing table:", err));
+          
+          html += `</tbody></table></div></div>`;
+          listDiv.innerHTML = html;
+        }).catch(err => console.error("Error listing table:", err));
     }
 
     function openDashReturnModal(item) {
@@ -841,7 +854,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       new bootstrap.Modal(document.getElementById('dashReturnModal')).show();
     }
 
-    // ✨ ฟังก์ชันเปิด Modal คืนพัสดุ (ปรับรูปแบบเช็คลิสต์พัสดุให้คลีน สวยงาม สไตล์เดียวกับหน้าอนุมัติ)
     function openReturnModal(item) {
       window.currentReturnItem = item;
       
@@ -864,7 +876,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       
       document.getElementById('returnItemInfo').innerHTML = infoHtml; 
 
-      // 📋 ปรับสไตล์เช็คลิสต์ด้านล่างให้สะอาดตา มีชื่อพัสดุเด่น รหัสอยู่ล่าง และจำนวนอยู่ขวาตามบรีฟเป๊ะๆ
       const listDiv = document.getElementById('checkable-return-list');
       if (listDiv) {
         listDiv.innerHTML = item.items.map((p, index) => `
@@ -893,22 +904,39 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       const now = new Date();
       const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
       document.getElementById('retDate').value = `${year}-${month}-${day}`; 
+      
+      // ✨ เปิดระเบิดกล้องถ่ายภาพผู้รับคืนทันทีเมื่อหน้า Modal รับคืนเด้งโชว์ขึ้นมา
+      initReturnCamera();
+      
       new bootstrap.Modal(document.getElementById('returnModal')).show();
       spReturn.clear(); setTimeout(() => { resizeCanvas(spReturn.canvas); }, 500);
     }
 
     function selectItemToReturn(item) { openReturnModal(item); }
 
-    // 🚀 เปลี่ยนมาใช้ fetch POST API สำหรับส่งแจ้งคืนพัสดุจากหน้าแรก (Dashboard)
+    // 🚀 บันทึกส่งคืนพัสดุแบบเจาะจงความปลอดภัยสูง (ใช้ Key ข้อมูลแทนเลขแถวกันบั๊กเลื่อนแถว)
     function confirmReturnFromDash(btn) {
       if (!selectedDashItem) return;
       const selectedIndexes = Array.from(document.querySelectorAll('.dash-item-cb:checked')).map(cb => parseInt(cb.value));
       if (selectedIndexes.length === 0) { return alert("⚠️ กรุณาเลือกรายการที่ต้องการส่งคืน"); }
       const originalText = btn.innerHTML;
       btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังดำเนินการ...';
-      const rowsToUpdate = selectedIndexes.map(idx => selectedDashItem.rows[idx]);
       
-      const payloadData = { action: "updateStatusToReturning", payload: rowsToUpdate };
+      const selectedItems = selectedIndexes.map(idx => selectedDashItem.items[idx]);
+      
+      const payloadData = { 
+        action: "updateStatusToReturning", 
+        payload: {
+          tsKey: selectedDashItem.tsKey,
+          empId: selectedDashItem.empId,
+          userName: selectedDashItem.userName,
+          dept: selectedDashItem.dept,
+          region: selectedDashItem.region,
+          area: selectedDashItem.area,
+          borrowDate: selectedDashItem.date,
+          items: selectedItems
+        }
+      };
 
       fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
         .then(res => res.json())
@@ -935,7 +963,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันย่อยจูนพิกเซลพรีเมียม: เส้นดำบาง, ขยับลายเซ็นหนีเส้น, และยกเลิกตัวหนาตรงชื่อ/วันที่
             const createStampHTML = (appr, label) => {
               if (!appr || !appr.name || appr.name === "-") {
                 return `
@@ -946,7 +973,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                   </div>`;
               }
               
-              // ฟอร์แมตแปลงวันที่เวลาให้ออกมาเป็นรูปแบบภาษาไทย dd/MM/yyyy
               let fDate = "-";
               if (appr.date) {
                 const dObj = new Date(appr.date);
@@ -984,23 +1010,22 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
 
               let validPhoto = getDirectLink(appr.photo);
               
-              // ✍️ ดึงลิงก์ลายเซ็น (หากเป็นหัวหน้าแผนกให้ล็อกใช้รูปดาวโดยตรงผ่านลิงก์ Thumbnail ประมวลผลเสถียร)
               let validSig = "";
+              let renderSigHTML = "";
+              
               if (label === "หัวหน้าแผนก") {
                 validSig = "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300";
+                renderSigHTML = `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
               } else {
                 validSig = getDirectLink(appr.sig);
+                if (validSig && validSig !== "") {
+                  renderSigHTML = `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
+                } else {
+                  renderSigHTML = `<div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #000; font-family: monospace; font-size: 8px; font-weight: normal; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #000; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
+                }
               }
 
               let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://f1f5f9';">`;
-              
-              // ✍️ 🟢 [ระบบคุมพิกัดลายเซ็นแสตมป์หนีเส้น] ปรับ Offset ดันรูปภาพขึ้นไปลอยเหนือเส้นดำพอดี ไม่ทับกัน
-              let renderSigHTML = "";
-              if (validSig && validSig !== "") {
-                renderSigHTML = (validSig.indexOf("<img") > -1) ? validSig : `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
-              } else {
-                renderSigHTML = `<div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #000; font-family: monospace; font-size: 8px; font-weight: normal; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #000; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
-              }
 
               return `
                 <div class="stamp-box text-center" style="padding: 5px; position: relative;">
@@ -1100,16 +1125,14 @@ async function openModalByIndex(index) {
         return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
       };
 
-      // ✍️ ฟังก์ชันสร้างแท็กลายเซ็นทับเส้นสำหรับหน้า Modal
       const renderModalSigSafe = (sigStr, isLevel1) => {
         let validSig = isLevel1 ? "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300" : getDirectLink(sigStr);
         if (!validSig || validSig === "") {
-          return `<div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-5deg); color: #28a745; font-family: monospace; font-size: 8px; font-weight: bold; background: rgba(255,255,255,0.85); padding: 1px 4px; border: 1px dashed #28a745; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
+          return `<div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #000; font-family: monospace; font-size: 8px; font-weight: normal; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #000; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
         }
-        return `<img src="${validSig}" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 90%; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
+        return `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
       };
 
-      // 🎨 1. สร้างโครงสร้าง HTML หลักสำหรับข้อมูลพัสดุ
       let infoHtml = `
         <div class="approval-info-box shadow-sm mb-3">
           <div class="d-flex justify-content-between align-items-center mb-1">
@@ -1128,7 +1151,6 @@ async function openModalByIndex(index) {
           </div>
         </div>`;
 
-      // 🛡️ 2. ตราประทับเรียลไทม์ (รูปถ่ายคลีน + ลายเซ็นทับเส้นเขียว + วงเล็บชื่อ)
       infoHtml += `
         <div class="approval-info-box shadow-sm mb-3 pt-2">
           <div class="small fw-bold text-purple mb-2" style="color: #a31d8e !important;"><i class="bi bi-shield-check me-1"></i> ประวัติและสถานะการอนุมัติในบิลนี้</div>
@@ -1139,9 +1161,9 @@ async function openModalByIndex(index) {
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr1?.photo)}
               </div>
-              <div class="position-relative mt-2 pt-1" style="border-top: 2px solid #28a745; margin-top: 15px !important;">
+              <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black; margin-top: 25px !important;">
                 ${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? renderModalSigSafe(currentItem.appr1?.sig, true) : ''}
-                <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">(${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"})</b>
+                <b class="d-block text-dark fw-normal truncate" style="font-size:0.7rem; max-width:85px; margin:1px auto 0 auto;">(${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"})</b>
               </div>
             </div>
 
@@ -1150,9 +1172,9 @@ async function openModalByIndex(index) {
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr2?.photo)}
               </div>
-              <div class="position-relative mt-2 pt-1" style="border-top: 2px solid #28a745; margin-top: 15px !important;">
+              <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black; margin-top: 25px !important;">
                 ${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? renderModalSigSafe(currentItem.appr2?.sig, false) : ''}
-                <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">(${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"})</b>
+                <b class="d-block text-dark fw-normal truncate" style="font-size:0.7rem; max-width:85px; margin:1px auto 0 auto;">(${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"})</b>
               </div>
             </div>
 
@@ -1161,9 +1183,9 @@ async function openModalByIndex(index) {
               <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
                 ${renderModalPhotoSafe(currentItem.appr3?.photo)}
               </div>
-              <div class="position-relative mt-2 pt-1" style="border-top: 2px solid #28a745; margin-top: 15px !important;">
+              <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black; margin-top: 25px !important;">
                 ${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? renderModalSigSafe(currentItem.appr3?.sig, false) : ''}
-                <b class="d-block text-dark truncate" style="font-size:0.7rem; max-width:85px; margin:0 auto;">(${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"})</b>
+                <b class="d-block text-dark fw-normal truncate" style="font-size:0.7rem; max-width:85px; margin:1px auto 0 auto;">(${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"})</b>
               </div>
             </div>
 
@@ -1172,7 +1194,6 @@ async function openModalByIndex(index) {
 
       document.getElementById('modalItemInfoNew').innerHTML = infoHtml;
       
-      // 🛠️ 3. ส่วนควบคุมสวิตช์ฟอร์มกล้องถ่ายรูป/ลายเซ็น
       ['step1', 'step2', 'step3'].forEach(id => { const el = document.getElementById('card-' + id); if (el) el.style.display = 'none'; });
       if (currentItem.status === "รอหัวหน้าแผนก") { document.getElementById('card-step1').style.display = 'block'; }
       else if (currentItem.status === "รอผู้จัดการ") { document.getElementById('card-step2').style.display = 'block'; }
@@ -1188,6 +1209,7 @@ async function openModalByIndex(index) {
       new bootstrap.Modal(document.getElementById('approveModal')).show();
       setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
 }
+
     function stopWebcamStream() {
       if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
@@ -1195,45 +1217,38 @@ async function openModalByIndex(index) {
       }
     }
 
-    // 📸 ✨ [อัปเกรดระบบชัตเตอร์เว็บแอป] บล็อกวิดีโอเข้าคานวาสตรงก่อนยิง POST ไปหน้าเว็บพาส
-    // 📸 ✨ [เวอร์ชันสมบูรณ์] อนุมัติพัสดุ: ส่งข้อมูลกระจายลงทุกแถว + บังคับใช้รูปภาพชัตเตอร์นิ่ง
     function confirmStep(lv) {
       const pad = lv === 1 ? sp1 : (lv === 2 ? sp2 : sp3);
       const name = document.getElementById('name' + lv).value;
       const pos = document.getElementById('pos' + lv).value;
       
-      // 1. ตรวจสอบชื่อ ตำแหน่ง และลายเซ็น
       if (!name || !pos || pad.isEmpty()) {
         return alert("⚠️ ข้อมูลไม่ครบ กรุณากรอกชื่อและเซ็นชื่อให้เรียบร้อยครับ");
       }
 
-      // 2. 📸 [แก้ไขจุดบั๊กภาพถ่าย] บังคับตรวจเช็กว่าต้องมีรูปถ่ายที่กดจากปุ่มชัตเตอร์เท่านั้น
       if (!capturedPhotoBase64) {
         return alert("📸 กรุณากดปุ่ม 'กดถ่ายรูป' เพื่อบันทึกภาพใบหน้ายืนยันตัวตนก่อนบันทึกอนุมัติครับ");
       }
 
-      // ดักจับปุ่มที่กดใช้งาน
       const btn = event.target; 
       const originalText = btn.innerText;
       btn.disabled = true; 
       btn.innerText = "กำลังบันทึกข้อมูลและภาพถ่ายทุกแถว...";
 
-      // 🔄 ดึง Array ของแถวพัสดุทั้งหมดในบิลนี้ เพื่อให้หลังบ้านนำไปวนลูปลงข้อมูลทุกแถว
       const rowArray = currentItem.rows; 
 
       const payloadData = {
         action: "updateApprovalStep",
         payload: { 
-          rows: rowArray,          // ส่งอาเรย์แถวทั้งหมดไป [แถวที่ 1, แถวที่ 2, แถวที่ 3]
+          rows: rowArray,          
           step: lv, 
           name: name, 
           pos: pos, 
-          sig: pad.toDataURL(),   // ส่งลายเซ็น
-          facePhoto: capturedPhotoBase64 // ส่งรูปภาพชัตเตอร์ที่นิ่งและคมชัดแน่นอน (แก้บั๊ก split)
+          sig: pad.toDataURL(),   
+          facePhoto: capturedPhotoBase64 
         }
       };
 
-      // ยิงข้อมูลไปหา Web App หลังบ้านด้วย fetch API
       fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
         .then(res => {
           if (!res.ok) throw new Error('เครือข่ายมีปัญหาหรือไม่สามารถส่งข้อมูลได้');
@@ -1243,7 +1258,7 @@ async function openModalByIndex(index) {
           if(res.success) {
             alert(res.result); 
             bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide(); 
-            refreshData(); // รีเฟรชตารางแดชบอร์ดหน้าแรก
+            refreshData();
             showPage('page-dashboard', document.querySelectorAll('.nav-item-side')[0]); 
           } else { 
             alert("❌ เกิดข้อผิดพลาดจากสคริปต์หลังบ้าน: " + res.error); 
@@ -1258,22 +1273,73 @@ async function openModalByIndex(index) {
         });
     }
 
-    // 🚀 [เวอร์ชันสมบูรณ์] บันทึกการรับคืนพัสดุจากหน้าระบบคืนพัสดุบน Netlify
+    // 📸 ✨ [ระบบควบคุมกล้องเว็บแคมสำหรับคนรับคืนพัสดุ]
+    async function initReturnCamera() {
+      const video = document.getElementById('retWebcam');
+      returnPhotoBase64 = null;
+      document.getElementById('ret-snapshot-overlay').style.display = 'none';
+      video.style.display = 'block';
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        returnWebcamStream = stream;
+        video.srcObject = stream;
+      } catch (err) {
+        console.error("ไม่สามารถเปิดกล้องผู้รับคืนได้: ", err);
+      }
+    }
+
+    function takeReturnSnapshot() {
+      const video = document.getElementById('retWebcam');
+      const canvas = document.getElementById('return-capture-canvas');
+      const overlay = document.getElementById('ret-snapshot-overlay');
+      const previewImg = document.getElementById('ret-snapshot-img');
+      
+      if (returnWebcamStream && video) {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        returnPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        previewImg.src = returnPhotoBase64;
+        overlay.style.display = 'block';
+        video.style.display = 'none';
+      }
+    }
+
+    function retakeReturnSnapshot() {
+      returnPhotoBase64 = null;
+      document.getElementById('ret-snapshot-overlay').style.display = 'none';
+      document.getElementById('retWebcam').style.display = 'block';
+    }
+
+    function stopReturnWebcam() {
+      if (returnWebcamStream) {
+        returnWebcamStream.getTracks().forEach(track => track.stop());
+        returnWebcamStream = null;
+      }
+    }
+
+    // 🚀 เซ็นรับคืนพัสดุพร้อมยิงส่งฐานข้อมูลแบบระบุ Unique Keys (แก้ไขบั๊กแถวคลาดเคลื่อน)
     document.getElementById('returnForm').onsubmit = function(e) {
       e.preventDefault();
       const selectedIndexes = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => parseInt(cb.value));
       if (selectedIndexes.length === 0) return alert("⚠️ กรุณาเลือกรายการพัสดุที่ต้องการคืน");
       if (spReturn.isEmpty()) return alert("⚠️ กรุณาเซ็นชื่อผู้รับคืน");
       
+      // 📸 บังคับให้ต้องถ่ายภาพใบหน้าเจ้าหน้าที่พัสดุผู้รับคืนของก่อนยืนยัน
+      if (!returnPhotoBase64) {
+        return alert("📸 กรุณากดถ่ายภาพใบหน้าผู้รับคืนพัสดุก่อนส่งข้อมูลครับ");
+      }
+      
       const btn = e.target.querySelector('button[type="submit"]');
       btn.disabled = true; 
       btn.innerText = "กำลังบันทึก...";
       
-      const selectedRows = selectedIndexes.map(idx => window.currentReturnItem.rows[idx]);
       const selectedItems = selectedIndexes.map(idx => window.currentReturnItem.items[idx]);
       
       const returnData = {
-        rows: selectedRows, 
         items: selectedItems, 
         tsKey: window.currentReturnItem.tsKey, 
         userName: window.currentReturnItem.userName,
@@ -1282,7 +1348,8 @@ async function openModalByIndex(index) {
         borrowDate: window.currentReturnItem.date,
         retDate: document.getElementById('retDate').value, 
         retReceiver: document.getElementById('retReceiver').value, 
-        sig: spReturn.toDataURL()
+        sig: spReturn.toDataURL(),
+        retFacePhoto: returnPhotoBase64 // 📸 พ่วงแนบรูปถ่าย Base64 ส่งไปเซฟลง Google Drive
       };
 
       const payloadData = { action: "processReturn", payload: returnData };
@@ -1296,6 +1363,7 @@ async function openModalByIndex(index) {
           if (res.success) {
             alert(res.result); 
             spReturn.clear(); 
+            stopReturnWebcam(); // ปิดเลนส์กล้องรับคืน
             bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide(); 
             refreshData(); 
           } else { 
@@ -1311,7 +1379,6 @@ async function openModalByIndex(index) {
         });
     };
 
-    // 🚀 เปลี่ยนมาใช้ fetch GET API ดึงลิสต์รายชื่อพนักงานที่ค้างพัสดุในเมนู คืนพัสดุ
     function loadReturnList() {
       const listDiv = document.getElementById('return-selector-list');
       listDiv.innerHTML = '<div class="text-center p-4 small text-muted">กำลังโหลดข้อมูล...</div>';
@@ -1356,7 +1423,6 @@ async function openModalByIndex(index) {
         }).catch(err => console.error("Error return list:", err));
     }
 
-    // 🚀 เปลี่ยนมาใช้ fetch GET API สำหรับอัปเดตตัวเลขแจ้งเตือน (Badges) แถบเมนูด้านซ้าย
     function updateNavBadges() {
       fetch(`${GAS_URL}?action=getPendingApprovals`)
         .then(res => res.json())
@@ -1400,7 +1466,6 @@ async function openModalByIndex(index) {
       canvas.getContext("2d").scale(ratio, ratio); 
     }
 
-    // โหลดครั้งแรกตอนรันระบบเข้าสิทธิ์ API ดึงข้อมูลคลังพัสดุ
     window.onload = () => { 
       fetch(`${GAS_URL}?action=getInventoryList`)
         .then(res => res.json())
@@ -1441,11 +1506,12 @@ async function openModalByIndex(index) {
       updateDashboardStats();
       loadDashboardList(lastDashboardType);
     }
+
     async function initCamera(facingMode) {
       document.getElementById('camera-loading').style.display = 'block';
       document.getElementById('camera-loading').innerHTML = "<div class='spinner-border spinner-border-sm me-1'></div> กำลังเปิดกล้อง...";
       
-      if (webcamStream) { stopWebcamStream(); } // สั่งเคลียร์ปิดสัญญาณเลนส์ตัวเก่าก่อนเปิดใหม่
+      if (webcamStream) { stopWebcamStream(); }
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -1458,9 +1524,8 @@ async function openModalByIndex(index) {
         else { video.src = window.URL.createObjectURL(stream); }
         document.getElementById('camera-loading').style.display = 'none';
       } catch (err) {
-        console.error("กล้องโหมด " + facingMode + " ขัดข้อง: ", err);
+        console.error("กล้องอนุมัติขัดข้อง: ", err);
         try {
-          // โหมดสำรองกรณีอุปกรณ์หรือบราวเซอร์ไม่รองรับการสลับแบบเจาะจง
           const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
           webcamStream = fallbackStream;
           document.getElementById('webcam-preview').srcObject = fallbackStream;
@@ -1470,37 +1535,32 @@ async function openModalByIndex(index) {
         }
       }
     }
+
     async function switchCamera() {
       currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
       await initCamera(currentFacingMode);
     }
 
-    // 📸 ฟังก์ชันกดชัตเตอร์สแนปถ่ายภาพล็อกความละเอียดเลนส์จริงจากบล็อกเกอร์
     function takeSnapshot() {
       const video = document.getElementById('webcam-preview');
       const canvas = document.getElementById('camera-capture-canvas');
       if (!video || !canvas) return;
       
-      // ตั้งขนาดกว้างยาวคานวาสให้สัมพันธ์กับมิติตัวรับแสงของเลนส์อุปกรณ์ ณ วินาทีนั้นจริง ๆ
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
       
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // ถอดรหัสส่งออกเป็นสตริง Base64 เพื่อเตรียมยิงเข้า API หลังบ้าน
       capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
       
-      // ตรึงภาพพรีวิวค้างไว้ที่หน้าจอโมดอล
       document.getElementById('snapshot-img').src = capturedPhotoBase64;
       document.getElementById('snapshot-preview-overlay').style.display = 'block';
       
-      // สลับการแสดงผลของหน้ากากกลุ่มปุ่มควบคุมกล้อง
       document.getElementById('btn-capture-snapshot').style.display = 'none';
       document.getElementById('btn-retake-snapshot').style.display = 'block';
     }
 
-    // 🔄 ฟังก์ชันกดยกเลิกลบรูปภาพเก่า เพื่อถ่ายรูปใหม่อีกครั้ง
     function retakeSnapshot() {
       capturedPhotoBase64 = null;
       const overlay = document.getElementById('snapshot-preview-overlay');
