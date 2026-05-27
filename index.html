@@ -935,7 +935,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           let html = '<div class="row g-3">'; 
           html += items.map((item, index) => {
             
-            // ✨ ฟังก์ชันภายในช่วยสร้างตราประทับแบบภาพถ่ายใบหน้า ซ้อนทับด้วยลายเซ็น และลงวันที่สีแดงด้านล่าง
+            // ✨ ฟังก์ชันย่อยอัปเกรดใหม่: ช่วยสร้างตราประทับ สกัด ID และป้องกันภาพพังแตกแบบถาวร
             const createStampHTML = (appr, label) => {
               // กรณีที่ตำแหน่งนั้นยังไม่ได้อนุมัติ ให้แสดงโครงจางๆ ไว้รอคนมากดอนุมัติ
               if (!appr || !appr.name || appr.name === "-") {
@@ -956,9 +956,32 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
                 } else { fDate = appr.date; }
               }
               
-              // ดักความปลอดภัย: ถ้าคอลัมน์ภาพถ่ายเก็บข้อความ Error ของเก่า ให้เคลียร์ทิ้งไม่เอามาขึ้นรูปพัง
-              let validPhoto = (appr.photo && appr.photo.indexOf("http") > -1) ? appr.photo : "";
-              let validSig = (appr.sig && appr.sig.indexOf("http") > -1) ? appr.sig : "";
+              // 🛠️ ✨ ฟังก์ชันสกัด ID ไฟล์จาก Google Drive อัตโนมัติ (สยบบั๊กภาพแตกจากต้นตอ)
+              const getDirectLink = (urlStr) => {
+                if (!urlStr || urlStr.indexOf("http") === -1) return "";
+                // ถ้าเป็นภาพประเภท Base64 ลายเซ็นสดดั้งเดิม ให้ส่งออกไปตรง ๆ เพื่อรอเรนเดอร์
+                if (urlStr.indexOf("data:image") > -1) return urlStr;
+                
+                var fileId = "";
+                // ท่าที่ 1: ถอดรหัสหา ID จากลิงก์รูปแบบพารามิเตอร์ ?id=
+                var matches = urlStr.match(/id=([^&]+)/);
+                if (matches && matches[1]) {
+                  fileId = matches[1];
+                } else {
+                  // ท่าที่ 2: ถอดรหัสหา ID จากลิงก์รูปแบบเส้นทาง /d/
+                  var parts = urlStr.split('/');
+                  var dIndex = parts.indexOf('d');
+                  if (dIndex !== -1 && parts[dIndex + 1]) {
+                    fileId = parts[dIndex + 1];
+                  }
+                }
+                // สรุปถ้าดึง ID สำเร็จ ให้บังคับแปลงเป็นรูปแบบ Direct Link ที่เบราว์เซอร์อ่านได้ 100%
+                return fileId ? "https://drive.google.com/uc?export=view&id=" + fileId : urlStr;
+              };
+
+              // นำค่าลิงก์ในตารางมาวิ่งผ่านฟังก์ชันแปลงรหัสเพื่อความปลอดภัยในการโหลดภาพ
+              let validPhoto = getDirectLink(appr.photo);
+              let validSig = getDirectLink(appr.sig);
 
               return `
                 <div class="stamp-box text-center" style="padding: 5px; position: relative;">
@@ -1014,10 +1037,10 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
           console.error(err);
           list.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถดึงรายการอนุมัติได้: ${err.message}</div>`;
         });
-    }
+}
 
-    // 📷 ✨ เปิดกล้องหน้าความคมชัดสูงสไตล์เว็บภายนอก
-    async function openModalByIndex(index) {
+// 📷 ✨ เปิดกล้องหน้าความคมชัดสูงสไตล์เว็บภายนอก
+async function openModalByIndex(index) {
       currentItem = window.tempItems[index];
       const infoHtml = `
         <div class="approval-info-box shadow-sm mb-3">
@@ -1058,7 +1081,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rT
       const modalEl = document.getElementById('approveModal');
       modalEl.removeEventListener('hidden.bs.modal', stopWebcamStream);
       modalEl.addEventListener('hidden.bs.modal', stopWebcamStream);
-    }
+}
 
     function stopWebcamStream() {
       if (webcamStream) {
