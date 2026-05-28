@@ -390,7 +390,10 @@
   <div class="modal fade" id="returnModal" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 rounded-4 shadow">
-        <div class="modal-header border-0 pb-0"><h6 class="fw-bold mb-0">📦 บันทึกการรับคืนพัสดุ</h6><button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopReturnWebcam()"></button></div>
+        <div class="modal-header border-0 pb-0">
+          <h6 class="fw-bold mb-0">📦 บันทึกการรับคืนพัสดุ</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopReturnWebcam()"></button>
+        </div>
         <div class="modal-body p-4 pt-2">
           <div id="returnItemInfo"></div>
           <div class="mb-3">
@@ -408,11 +411,16 @@
                 <video id="retWebcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
                 <div id="ret-snapshot-overlay" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; background: #000;">
                   <img id="ret-snapshot-img" style="width: 100%; height: 100%; object-fit: cover;">
+                  <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2">
+                    <span class="badge bg-success rounded-pill px-2.5 py-1.5 shadow-sm" style="font-size: 0.7rem;"><i class="bi bi-check-circle-fill"></i> จับภาพสำเร็จ</span>
+                  </div>
                 </div>
               </div>
+              
               <div class="d-flex justify-content-center gap-2 mt-2">
-                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="takeReturnSnapshot()"><i class="bi bi-camera"></i> กดถ่ายรูป</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeReturnSnapshot()"><i class="bi bi-arrow-counterclockwise"></i> ถ่ายใหม่</button>
+                <button type="button" id="btn-ret-capture" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="takeReturnSnapshot()"><i class="bi bi-camera"></i> กดถ่ายรูป</button>
+                <button type="button" id="btn-ret-retake" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeReturnSnapshot()" style="display: none;"><i class="bi bi-arrow-counterclockwise"></i> ถ่ายใหม่</button>
+                <button type="button" id="btn-ret-toggle" class="btn btn-sm btn-light border rounded-pill px-3 text-secondary fw-bold" onclick="switchReturnCamera()"><i class="bi bi-arrow-repeat"></i> สลับกล้อง</button>
               </div>
               <canvas id="return-capture-canvas" style="display: none;"></canvas>
             </div>
@@ -519,9 +527,12 @@
     const sp2 = new SignaturePad(document.getElementById('pad2'));
     const sp3 = new SignaturePad(document.getElementById('pad3'));
     const spReturn = new SignaturePad(document.getElementById('pad-return'));
-    let currentFacingMode = "user";
+    
+    let currentFacingMode = "user"; // คุมกล้องฝั่งอนุมัติ
+    let returnFacingMode = "user";  // 🎯 คุมกล้องฝั่งรับคืนพัสดุแยกเด็ดขาด
+    
     let capturedPhotoBase64 = null; 
-    let returnPhotoBase64 = null; // เก็บภาพก้อนของคนรับคืน
+    let returnPhotoBase64 = null; 
     let currentItem = null;
     let currentInventoryData = [];
     let activeRowElement = null;
@@ -905,7 +916,6 @@
       const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
       document.getElementById('retDate').value = `${year}-${month}-${day}`; 
       
-      // ✨ เปิดระเบิดกล้องถ่ายภาพผู้รับคืนทันทีเมื่อหน้า Modal รับคืนเด้งโชว์ขึ้นมา
       initReturnCamera();
       
       new bootstrap.Modal(document.getElementById('returnModal')).show();
@@ -914,21 +924,15 @@
 
     function selectItemToReturn(item) { openReturnModal(item); }
 
-    // 🚀 บันทึกส่งคืนพัสดุแบบเจาะจงความปลอดภัยสูง (ใช้ Key ข้อมูลแทนเลขแถวกันบั๊กเลื่อนแถว)
     function confirmReturnFromDash(btn) {
       if (!selectedDashItem) return;
-      
-      // ดึงอินเด็กซ์รายการพัสดุทั้งหมดที่ผู้ใช้งานติ๊กถูกเลือกไว้บนหน้าจอ
       const selectedIndexes = Array.from(document.querySelectorAll('.dash-item-cb:checked')).map(cb => parseInt(cb.value));
       if (selectedIndexes.length === 0) { return alert("⚠️ กรุณาเลือกรายการที่ต้องการส่งคืน"); }
-      
       const originalText = btn.innerHTML;
       btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังดำเนินการ...';
       
-      // ดึงเอาเฉพาะข้อมูลรายการพัสดุชิ้นที่ติ๊กเลือกจริง ๆ มามัดรวมเข้าอาเรย์
       const selectedItems = selectedIndexes.map(idx => selectedDashItem.items[idx]);
       
-      // 🎯 [ไม้เด็ด] แปลงโครงสร้างส่งก้อนข้อมูลพาสเวิร์ดผูก ID แทนเลขแถวดิบหน้าบ้าน ป้องกันบั๊กข้อมูลสลับแถวเด็ดขาด
       const payloadData = { 
         action: "updateStatusToReturning", 
         payload: {
@@ -939,7 +943,7 @@
           region: selectedDashItem.region,
           area: selectedDashItem.area,
           borrowDate: selectedDashItem.date,
-          items: selectedItems // ส่งพัสดุที่ติ๊กเลือกไปวนลูป
+          items: selectedItems
         }
       };
 
@@ -955,7 +959,7 @@
           } else { alert("Error API: " + res.error); }
           btn.disabled = false; btn.innerHTML = originalText;
         }).catch(err => { alert("Error: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
-}
+    }
 
     function loadPendingList() {
       const list = document.getElementById('approval-list');
@@ -1091,9 +1095,9 @@
           console.error(err);
           list.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถดึงรายการอนุมัติได้: ${err.message}</div>`;
         });
-}
+    }
 
-async function openModalByIndex(index) {
+    async function openModalByIndex(index) {
       currentItem = window.tempItems[index];
       console.log("ข้อมูลผู้อนุมัติปัจจุบัน:", currentItem);
       
@@ -1215,233 +1219,63 @@ async function openModalByIndex(index) {
 
       new bootstrap.Modal(document.getElementById('approveModal')).show();
       setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
-}
-
-    function stopWebcamStream() {
-      if (webcamStream) {
-        webcamStream.getTracks().forEach(track => track.stop());
-        webcamStream = null;
-      }
     }
-
-    function confirmStep(lv) {
-      const pad = lv === 1 ? sp1 : (lv === 2 ? sp2 : sp3);
-      const name = document.getElementById('name' + lv).value;
-      const pos = document.getElementById('pos' + lv).value;
-      
-      if (!name || !pos || pad.isEmpty()) {
-        return alert("⚠️ ข้อมูลไม่ครบ กรุณากรอกชื่อและเซ็นชื่อให้เรียบร้อยครับ");
-      }
-
-      if (!capturedPhotoBase64) {
-        return alert("📸 กรุณากดปุ่ม 'กดถ่ายรูป' เพื่อบันทึกภาพใบหน้ายืนยันตัวตนก่อนบันทึกอนุมัติครับ");
-      }
-
-      const btn = event.target; 
-      const originalText = btn.innerText;
-      btn.disabled = true; 
-      btn.innerText = "กำลังบันทึกข้อมูลและภาพถ่ายทุกแถว...";
-
-      const rowArray = currentItem.rows; 
-
-      const payloadData = {
-        action: "updateApprovalStep",
-        payload: { 
-          rows: rowArray,          
-          step: lv, 
-          name: name, 
-          pos: pos, 
-          sig: pad.toDataURL(),   
-          facePhoto: capturedPhotoBase64 
-        }
-      };
-
-      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
-        .then(res => {
-          if (!res.ok) throw new Error('เครือข่ายมีปัญหาหรือไม่สามารถส่งข้อมูลได้');
-          return res.json();
-        })
-        .then(res => { 
-          if(res.success) {
-            alert(res.result); 
-            bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide(); 
-            refreshData();
-            showPage('page-dashboard', document.querySelectorAll('.nav-item-side')[0]); 
-          } else { 
-            alert("❌ เกิดข้อผิดพลาดจากสคริปต์หลังบ้าน: " + res.error); 
-          }
-          btn.disabled = false; 
-          btn.innerText = originalText;
-        })
-        .catch(err => { 
-          alert("❌ ไม่สามารถเชื่อมต่อ API ได้: " + err.message); 
-          btn.disabled = false; 
-          btn.innerText = originalText; 
-        });
-    }
-
-    // 📸 ✨ [ระบบควบคุมกล้องเว็บแคมสำหรับคนรับคืนพัสดุ]
-    async function initReturnCamera() {
-      const video = document.getElementById('retWebcam');
-      returnPhotoBase64 = null;
-      document.getElementById('ret-snapshot-overlay').style.display = 'none';
-      video.style.display = 'block';
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-        returnWebcamStream = stream;
-        video.srcObject = stream;
-      } catch (err) {
-        console.error("ไม่สามารถเปิดกล้องผู้รับคืนได้: ", err);
-      }
-    }
-
-    function takeReturnSnapshot() {
-      const video = document.getElementById('retWebcam');
-      const canvas = document.getElementById('return-capture-canvas');
-      const overlay = document.getElementById('ret-snapshot-overlay');
-      const previewImg = document.getElementById('ret-snapshot-img');
-      
-      if (returnWebcamStream && video) {
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        returnPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
-        previewImg.src = returnPhotoBase64;
-        overlay.style.display = 'block';
-        video.style.display = 'none';
-      }
-    }
-
-    function retakeReturnSnapshot() {
-      returnPhotoBase64 = null;
-      document.getElementById('ret-snapshot-overlay').style.display = 'none';
-      document.getElementById('retWebcam').style.display = 'block';
-    }
-
-    function stopReturnWebcam() {
-      if (returnWebcamStream) {
-        returnWebcamStream.getTracks().forEach(track => track.stop());
-        returnWebcamStream = null;
-      }
-    }
-
-    // 🚀 เซ็นรับคืนพัสดุพร้อมยิงส่งฐานข้อมูลแบบระบุ Unique Keys (แก้ไขบั๊กแถวคลาดเคลื่อน)
-    document.getElementById('returnForm').onsubmit = function(e) {
-      e.preventDefault();
-      const selectedIndexes = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => parseInt(cb.value));
-      if (selectedIndexes.length === 0) return alert("⚠️ กรุณาเลือกรายการพัสดุที่ต้องการคืน");
-      if (spReturn.isEmpty()) return alert("⚠️ กรุณาเซ็นชื่อผู้รับคืน");
-      
-      // 📸 บังคับให้ต้องถ่ายภาพใบหน้าเจ้าหน้าที่พัสดุผู้รับคืนของก่อนยืนยัน
-      if (!returnPhotoBase64) {
-        return alert("📸 กรุณากดถ่ายภาพใบหน้าผู้รับคืนพัสดุก่อนส่งข้อมูลครับ");
-      }
-      
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.disabled = true; 
-      btn.innerText = "กำลังบันทึก...";
-      
-      const selectedItems = selectedIndexes.map(idx => window.currentReturnItem.items[idx]);
-      
-      const returnData = {
-        items: selectedItems, 
-        tsKey: window.currentReturnItem.tsKey, 
-        userName: window.currentReturnItem.userName,
-        empId: window.currentReturnItem.empId, 
-        dept: window.currentReturnItem.dept, 
-        borrowDate: window.currentReturnItem.date,
-        retDate: document.getElementById('retDate').value, 
-        retReceiver: document.getElementById('retReceiver').value, 
-        sig: spReturn.toDataURL(),
-        retFacePhoto: returnPhotoBase64 // 📸 พ่วงแนบรูปถ่าย Base64 ส่งไปเซฟลง Google Drive
-      };
-
-      const payloadData = { action: "processReturn", payload: returnData };
-
-      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
-        .then(res => {
-          if (!res.ok) throw new Error('เครือข่ายมีปัญหาหรือไม่สามารถส่งข้อมูลได้');
-          return res.json();
-        })
-        .then(res => {
-          if (res.success) {
-            alert(res.result); 
-            spReturn.clear(); 
-            stopReturnWebcam(); // ปิดเลนส์กล้องรับคืน
-            bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide(); 
-            refreshData(); 
-          } else { 
-            alert("❌ เกิดข้อผิดพลาด: " + res.error); 
-          }
-          btn.disabled = false; 
-          btn.innerText = "บันทึกการคืนพัสดุ";
-        })
-        .catch(err => { 
-          alert("API Error: " + err.message); 
-          btn.disabled = false; 
-          btn.innerText = "บันทึกการคืนพัสดุ"; 
-        });
-    };
 
     function loadReturnList() {
-  const listDiv = document.getElementById('return-selector-list');
-  // 🔄 แสดง Spinner หมุนแบบพรีเมียมระหว่างโหลดข้อมูล
-  listDiv.innerHTML = '<div class="text-center p-4 small text-muted"><div class="spinner-border text-info spinner-border-sm me-2"></div>กำลังโหลดรายการค้างคืน...</div>';
-  
-  fetch(`${GAS_URL}?action=getItemsToReturn`)
-    .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
-    .then(items => {
-      if (!items || items.length === 0) { 
-        listDiv.innerHTML = '<div class="p-4 text-center text-muted bg-white rounded-4 shadow-sm border">🎉 ไม่มีพัสดุค้างคืนในระบบ</div>'; 
-        return; 
-      }
+      const listDiv = document.getElementById('return-selector-list');
+      listDiv.innerHTML = '<div class="text-center p-4 small text-muted"><div class="spinner-border text-info spinner-border-sm me-2"></div>กำลังโหลดรายการค้างคืน...</div>';
       
-      listDiv.innerHTML = items.map(item => `
-        <div class="item-card shadow-sm p-3 mb-3 bg-white rounded-4 animate-fade-in" onclick='selectItemToReturn(${JSON.stringify(item)})' style="cursor:pointer; border-left: 5px solid #0dcaf0;">
-          <div class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2">
-            <div>
-              <b class="text-dark"><i class="bi bi-person-circle text-primary me-1"></i> ${item.userName}</b> <span class="small text-muted">(ID: ${item.empId})</span>
-              <div class="d-flex flex-wrap gap-2 small text-muted mt-1" style="font-size: 0.78rem;">
-                <div>🏢 <b>สังกัด:</b> ${item.dept || '-'}</div>
-                <div class="text-secondary opacity-50">|</div>
-                <div>🗺️ <b>ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
-                <div class="text-secondary opacity-50">|</div>
-                <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
+      fetch(`${GAS_URL}?action=getItemsToReturn`)
+        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
+        .then(items => {
+          if (!items || items.length === 0) { 
+            listDiv.innerHTML = '<div class="p-4 text-center text-muted bg-white rounded-4 shadow-sm border">🎉 ไม่มีพัสดุค้างคืนในระบบ</div>'; 
+            return; 
+          }
+          
+          listDiv.innerHTML = items.map(item => `
+            <div class="item-card shadow-sm p-3 mb-3 bg-white rounded-4 animate-fade-in" onclick='selectItemToReturn(${JSON.stringify(item)})' style="cursor:pointer; border-left: 5px solid #0dcaf0;">
+              <div class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2">
+                <div>
+                  <b class="text-dark"><i class="bi bi-person-circle text-primary me-1"></i> ${item.userName}</b> <span class="small text-muted">(ID: ${item.empId})</span>
+                  <div class="d-flex flex-wrap gap-2 small text-muted mt-1" style="font-size: 0.78rem;">
+                    <div>🏢 <b>สังกัด:</b> ${item.dept || '-'}</div>
+                    <div class="text-secondary opacity-50">|</div>
+                    <div>🗺️ <b>ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
+                    <div class="text-secondary opacity-50">|</div>
+                    <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
+                  </div>
+                </div>
+                <div class="text-end" style="min-width: 150px;">
+                  <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.borrowDate || '-'}</div>
+                  <div class="small text-danger fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-clock-history"></i> แจ้งคืนเมื่อ: ${item.date}</div>
+                </div>
               </div>
-            </div>
-            <div class="text-end" style="min-width: 150px;">
-              <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.borrowDate || '-'}</div>
-              <div class="small text-danger fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-clock-history"></i> แจ้งคืนเมื่อ: ${item.date}</div>
-            </div>
-          </div>
-          
-          <div class="small fw-bold text-info mb-1"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่แจ้งส่งคืน</div>
-          <div class="bg-light rounded-3 p-2 mb-2">
-            ${(item.items || []).map((p, i) => `
-              <div class="d-flex justify-content-between small text-secondary border-bottom border-white pb-1 mb-1" style="border-color: #edf2f7 !important;">
-                <span><b>${i + 1}.</b> ${p.itemName} (รหัส: ${p.itemId})</span>
-                <span class="text-primary fw-bold">${p.itemQty} ${p.itemUnit}</span>
-              </div>`).join('')}
-          </div>
-          
-          ${item.receiverName ? `
-            <div class="mt-2 p-2 rounded-3 border" style="background-color: #f0faff; border-style: dashed !important;">
-               <div class="row g-0 small" style="font-size: 0.7rem;">
-                  <div class="col-4"><b>ผู้รับคืน:</b><br>${item.receiverName}</div>
-                  <div class="col-4 text-center"><b>ตำแหน่ง:</b><br>${item.receiverPos || 'เจ้าหน้าที่'}</div>
-                  <div class="col-4 text-end text-danger"><b>วันที่รับจริง:</b><br><b>${item.date}</b></div>
-               </div>
-            </div>` : `
-            <div class="text-center mt-2 small text-primary fw-bold"><i class="bi bi-camera-fill me-1"></i> คลิกเพื่อเปิดกล้องเว็บแคมและเซ็นรับคืนพัสดุ ></div>`}
-        </div>`).join('');
-    }).catch(err => {
-      console.error("Error return list:", err);
-      listDiv.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถโหลดรายการค้างคืนได้: ${err.message}</div>`;
-    });
-}
+              
+              <div class="small fw-bold text-info mb-1"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่แจ้งส่งคืน</div>
+              <div class="bg-light rounded-3 p-2 mb-2">
+                ${(item.items || []).map((p, i) => `
+                  <div class="d-flex justify-content-between small text-secondary border-bottom border-white pb-1 mb-1" style="border-color: #edf2f7 !important;">
+                    <span><b>${i + 1}.</b> ${p.itemName} (รหัส: ${p.itemId})</span>
+                    <span class="text-primary fw-bold">${p.itemQty} ${p.itemUnit}</span>
+                  </div>`).join('')}
+              </div>
+              
+              ${item.receiverName ? `
+                <div class="mt-2 p-2 rounded-3 border" style="background-color: #f0faff; border-style: dashed !important;">
+                   <div class="row g-0 small" style="font-size: 0.7rem;">
+                      <div class="col-4"><b>ผู้รับคืน:</b><br>${item.receiverName}</div>
+                      <div class="col-4 text-center"><b>ตำแหน่ง:</b><br>${item.receiverPos || 'เจ้าหน้าที่'}</div>
+                      <div class="col-4 text-end text-danger"><b>วันที่รับจริง:</b><br><b>${item.date}</b></div>
+                   </div>
+                </div>` : `
+                <div class="text-center mt-2 small text-primary fw-bold"><i class="bi bi-camera-fill me-1"></i> คลิกเพื่อเปิดกล้องเว็บแคมและเซ็นรับคืนพัสดุ ></div>`}
+            </div>`).join('');
+        }).catch(err => {
+          console.error("Error return list:", err);
+          listDiv.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถโหลดรายการค้างคืนได้: ${err.message}</div>`;
+        });
+    }
 
     function updateNavBadges() {
       fetch(`${GAS_URL}?action=getPendingApprovals`)
@@ -1452,7 +1286,6 @@ async function openModalByIndex(index) {
             if (statsList && statsList.length > 0) { approveBadge.innerText = statsList.length; approveBadge.style.display = 'flex'; }
             else { approveBadge.style.display = 'none'; }
           }
-          // 🔴 วิ่งไปอัปเดตยอดตัวเลขสีแดงของฝั่งคืนพัสดุต่อทันที
           updateReturnBadge();
         }).catch(err => console.error("Error nav approve badges:", err));
     }
@@ -1463,12 +1296,11 @@ async function openModalByIndex(index) {
         .then(items => {
           const returnBadge = document.getElementById('nav-badge-return');
           if (returnBadge) {
-            // ดึงจำนวนกลุ่มบิล (ความยาวอาเรย์) ที่รอเจ้าหน้าที่เซ็นรับคืนมาโชว์บนเบจสีแดง
             if (items && items.length > 0) { 
               returnBadge.innerText = items.length; 
-              returnBadge.style.display = 'flex'; // แสดงวงกลมสีแดงโชว์ตัวเลข
+              returnBadge.style.display = 'flex'; 
             }
-            else { returnBadge.style.display = 'none'; } // ซ่อนไปถ้าไม่มีของค้างคืน
+            else { returnBadge.style.display = 'none'; }
           }
         }).catch(err => console.error("Error nav return badges:", err));
     }
@@ -1561,6 +1393,13 @@ async function openModalByIndex(index) {
       }
     }
 
+    function stopWebcamStream() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+      }
+    }
+
     async function switchCamera() {
       currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
       await initCamera(currentFacingMode);
@@ -1595,6 +1434,84 @@ async function openModalByIndex(index) {
       if (overlay) overlay.style.display = 'none';
       if (btnCapture) btnCapture.style.display = 'block';
       if (btnRetake) btnRetake.style.display = 'none';
+    }
+
+    // 📸 --- ระบบควบคุมเลนส์กล้องหน้า-หลัง สำหรับส่วนรับคืนพัสดุ ---
+    async function initReturnCamera() {
+      const video = document.getElementById('retWebcam');
+      returnPhotoBase64 = null;
+      document.getElementById('ret-snapshot-overlay').style.display = 'none';
+      if (video) video.style.display = 'block';
+      
+      // ล้างหน่วยความจำเลนส์เดิมก่อนสั่งสลับอุปกรณ์
+      if (returnWebcamStream) {
+        returnWebcamStream.getTracks().forEach(track => track.stop());
+        returnWebcamStream = null;
+      }
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: returnFacingMode, width: { ideal: 640 }, height: { ideal: 480 } }, 
+          audio: false 
+        });
+        returnWebcamStream = stream;
+        if (video) video.srcObject = stream;
+      } catch (err) {
+        console.error("ระบบกล้องรับคืนโหมด " + returnFacingMode + " ติดขัด: ", err);
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          returnWebcamStream = fallbackStream;
+          if (video) video.srcObject = fallbackStream;
+        } catch (fbErr) {
+          console.error("บล็อกกล้องสมบูรณ์:", fbErr);
+        }
+      }
+    }
+
+    async function switchReturnCamera() {
+      // สลับจากสิทธิ์กล้องหน้า (user) ไปกล้องหลัง (environment) สลับไปมา
+      returnFacingMode = (returnFacingMode === "user") ? "environment" : "user";
+      await initReturnCamera();
+    }
+
+    function takeReturnSnapshot() {
+      const video = document.getElementById('retWebcam');
+      const canvas = document.getElementById('return-capture-canvas');
+      const overlay = document.getElementById('ret-snapshot-overlay');
+      const previewImg = document.getElementById('ret-snapshot-img');
+      
+      if (returnWebcamStream && video) {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        returnPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        previewImg.src = returnPhotoBase64;
+        overlay.style.display = 'block';
+        video.style.display = 'none';
+        
+        document.getElementById('btn-ret-capture').style.display = 'none';
+        document.getElementById('btn-ret-retake').style.display = 'block';
+        document.getElementById('btn-ret-toggle').style.display = 'none';
+      }
+    }
+
+    function retakeReturnSnapshot() {
+      returnPhotoBase64 = null;
+      document.getElementById('ret-snapshot-overlay').style.display = 'none';
+      document.getElementById('retWebcam').style.display = 'block';
+      
+      document.getElementById('btn-ret-capture').style.display = 'block';
+      document.getElementById('btn-ret-retake').style.display = 'none';
+      document.getElementById('btn-ret-toggle').style.display = 'block';
+    }
+
+    function stopReturnWebcam() {
+      if (returnWebcamStream) {
+        returnWebcamStream.getTracks().forEach(track => track.stop());
+        returnWebcamStream = null;
+      }
     }
   </script>
 </body>
