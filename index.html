@@ -754,9 +754,10 @@
           let html = `
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white animate-fade-in">
               <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="font-size: 0.82rem;">
-                  <thead class="table-light text-secondary fw-bold" style="background-color: #f8f9fa; border-bottom: 1px solid #edf2f7; white-space: nowrap;">
-                    <tr>
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                  <thead class="table-light fw-bold" style="background-color: #f8f9fa; border-bottom: 2px solid #edf2f7; white-space: nowrap;">
+                    <!-- 🎨 ปรับหัวตารางให้เป็นสีดำเข้มเห็นชัด -->
+                    <tr class="text-dark">
                       <th class="ps-4 py-3">ชื่อผู้ยืม</th>
                       <th class="py-3">รหัสพนักงาน</th>
                       <th class="py-3">สังกัด</th>
@@ -792,23 +793,24 @@
             group.items.forEach((item, index) => {
               html += `
                 <tr ${rowOverdueClass} onclick='openDashReturnModal(${JSON.stringify(group)})' style="cursor: pointer;">
-                  <td class="ps-4 py-3 fw-bold text-dark">${index === 0 ? group.userName : `<span class="text-muted opacity-50">”</span>`}</td>
-                  <td class="py-3 text-muted">${index === 0 ? group.empId : ""}</td>
+                  <!-- 🎨 เปลี่ยนคลาสสีของตัวหนังสือทุกช่องในแถวให้เป็น text-dark (สีดำเข้มชัดเจน) -->
+                  <td class="ps-4 py-3 fw-bold text-dark">${index === 0 ? group.userName : `<span class="text-muted opacity-25">”</span>`}</td>
+                  <td class="py-3 text-dark">${index === 0 ? group.empId : ""}</td>
                   <td class="py-3 text-dark">${index === 0 ? (group.dept || "-") : ""}</td>
-                  <td class="py-3 text-secondary">${index === 0 ? (group.region || "-") : ""}</td>
-                  <td class="py-3 text-secondary">${index === 0 ? (group.area || "-") : ""}</td>
+                  <td class="py-3 text-dark fw-bold">${index === 0 ? (group.region || "-") : ""}</td>
+                  <td class="py-3 text-dark">${index === 0 ? (group.area || "-") : ""}</td>
                   
-                  <td class="py-3 text-mono font-monospace" style="font-size: 0.78rem;">${item.itemId}</td>
+                  <td class="py-3 font-monospace text-dark" style="font-size: 0.8rem; font-weight: 600;">${item.itemId}</td>
                   <td class="py-3 fw-bold text-dark text-wrap">${item.itemName}</td>
-                  <td class="py-3">
-                    <span class="fw-bold text-primary">${item.itemQty}</span>
-                    <small class="text-muted">${item.itemUnit || "หน่วย"}</small>
+                  <td class="py-3 text-dark">
+                    <span class="fw-bold text-primary" style="font-size: 0.9rem;">${item.itemQty}</span>
+                    <span class="fw-bold">${item.itemUnit || "หน่วย"}</span>
                   </td>
                   
-                  <td class="py-3 text-secondary">${index === 0 ? group.date : ""}</td>
-                  <td class="py-3 text-secondary">${index === 0 ? group.approveDate : ""}</td>
-                  <td class="py-3 text-secondary">${index === 0 ? group.returnDate : ""}</td>
-                  <td class="py-3 text-secondary">${index === 0 ? group.receiveDate : ""}</td>
+                  <td class="py-3 text-dark">${index === 0 ? group.date : ""}</td>
+                  <td class="py-3 text-dark">${index === 0 ? group.approveDate : ""}</td>
+                  <td class="py-3 text-dark fw-bold">${index === 0 ? group.returnDate : ""}</td>
+                  <td class="py-3 text-dark fw-bold">${index === 0 ? group.receiveDate : ""}</td>
                   
                   <td class="pe-4 py-3 text-end">
                     ${index === 0 ? `
