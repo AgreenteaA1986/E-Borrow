@@ -1388,7 +1388,7 @@ async function openModalByIndex(index) {
 
     function loadReturnList() {
   const listDiv = document.getElementById('return-selector-list');
-  // 🔄 เปลี่ยนหน้ากาก Loading ให้เป็น Spinner หมุนแบบพรีเมียมสวยงามสไตล์เดียวกับหน้าอนุมัติ
+  // 🔄 แสดง Spinner หมุนแบบพรีเมียมระหว่างโหลดข้อมูล
   listDiv.innerHTML = '<div class="text-center p-4 small text-muted"><div class="spinner-border text-info spinner-border-sm me-2"></div>กำลังโหลดรายการค้างคืน...</div>';
   
   fetch(`${GAS_URL}?action=getItemsToReturn`)
@@ -1412,8 +1412,8 @@ async function openModalByIndex(index) {
                 <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
               </div>
             </div>
-            <div class="text-end" style="min-width: 120px;">
-              <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.date}</div>
+            <div class="text-end" style="min-width: 150px;">
+              <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.borrowDate || '-'}</div>
               <div class="small text-danger fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-clock-history"></i> แจ้งคืนเมื่อ: ${item.date}</div>
             </div>
           </div>
