@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <style>
   /* --- 1. Global Variables & Base Styles --- */
@@ -147,6 +148,10 @@
           <i class="bi bi-arrow-counterclockwise fs-4 me-2 nav-icon-font"></i>
           <span class="nav-text-side">คืนพัสดุ</span>
           <span id="nav-badge-return" class="badge-side" style="display: none;">0</span>
+        </div>
+        <div class="nav-item-side" onclick="showPage('page-analytics', this)">
+          <i class="bi bi-bar-chart-line-fill fs-4 me-2 nav-icon-font"></i>
+          <span class="nav-text-side">สถิติและภาพรวม</span>
         </div>
       </div>
     </nav>
@@ -306,6 +311,35 @@
           <h4><i class="bi bi-arrow-repeat me-2"></i>คืนพัสดุ (รายการรอยืนยัน)</h4>
           <div id="return-selector-list" class="list-group mb-4 rounded-4 shadow-sm"></div>
         </div>
+
+        <div id="page-analytics" class="page">
+          <h4><i class="bi bi-pie-chart-fill text-primary me-2"></i> ศูนย์รายงานวิเคราะห์สถิติภาพรวมคลัง</h4>
+          
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-lg-8">
+              <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="min-height: 380px;">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up-arrow text-primary me-1"></i> สถิติจำนวนรายการยืมพัสดุสะสมรายเดือน (แยกตามภูมิภาค)</h6>
+                <div style="position: relative; width: 100%; height: 290px;">
+                  <canvas id="monthlyBarChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-lg-4">
+              <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="min-height: 380px;">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-donut-chart text-success me-1"></i> สัดส่วนเปอร์เซ็นต์การยืมพัสดุของแต่ละภาค (%)</h6>
+                <div style="position: relative; width: 100%; height: 290px; display: flex; align-items: center; justify-content: center;">
+                  <canvas id="regionDonutChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h6 class="fw-bold text-danger mb-3"><i class="bi bi-exclamation-octagon-fill me-1"></i> รายชื่อบิลประวัติการขอยืมพัสดุเกินกำหนด (ค้างส่งคืนเกิน 7 วัน)</h6>
+            <div id="overdue-analytics-container"></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -584,7 +618,7 @@
     let webcamStream = null;
     let returnWebcamStream = null;
     let barChartInstance = null;
-    let donutChartInstance = null;
+    let doughnutChartInstance = null;
 
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
@@ -949,7 +983,7 @@
           <div>${itemsLi}</div>
         </div>
         
-        <h6 class="fw-bold text-dark mb-2 small ps-1"><i class="bi bi-shield-check text-success"></i> ข้อมูลการินุมัติ</h6>
+        <h6 class="fw-bold text-dark mb-2 small ps-1"><i class="bi bi-shield-check text-success"></i> ข้อมูลการอนุมัติ</h6>
         <div class="row g-2 text-center mb-3">
           <div class="col-4 border-end">
             <small class="fw-bold text-secondary d-block" style="font-size:0.65rem; margin-bottom:4px;">1. หัวหน้าแผนก</small>
@@ -992,12 +1026,11 @@
       new bootstrap.Modal(document.getElementById('viewDetailModal')).show();
     }
 
-    // 🛠️ ✨ [ฟังก์ชันวิกฤตความปลอดภัย] แยกล็อคตำแหน่งการสืบค้น Picker สำหรับกล่องแก้ไขบนหน้า Dashboard โดยเฉพาะ
+    // 🛠️ ✨ [แยกล็อคสิทธิ์คลังตัวแก้ไขชัวร์ 100%] ฟังก์ชันช่วยระบุ Picker หยอดค่าลงเฉพาะกล่องใบงานซ่อมแซม
     function openEditPicker(el) {
       currentActiveEditRow = el.closest('.edit-item-row');
       if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
       
-      // สับเปลี่ยนสิทธิ์ล็อกให้ผลลัพธ์จากคลังวิ่งเข้ามาบันทึกที่ช่องแก้ไขบิลเก่า
       window.selectItemFromPicker = function(id, name, unit, stock) {
         if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
         if (currentActiveEditRow) {
@@ -1055,10 +1088,8 @@
       document.getElementById('editArea').value = group.area || "เขต 1";
       document.getElementById('editDate').value = group.date;
 
-      // ล้างแถวรายการพัสดุในหน้ากากเดิมออกก่อน
       document.getElementById('edit-items-container').innerHTML = '';
 
-      // วนลูปนำรายการพัสดุทั้งหมดที่มีอยู่ในบิลนี้มากางเปิดสร้างแถวให้เลือกแก้ไขหรือกดลบ
       if (group.items && group.items.length > 0) {
         group.items.forEach(it => {
           addEditItemRow(it.itemId, it.itemName, it.itemQty, it.itemUnit);
@@ -1067,7 +1098,6 @@
         addEditItemRow();
       }
 
-      // เปิดสิทธิ์ฉายหน้ากากฟอร์มแก้ไขพรีเมียม
       new bootstrap.Modal(document.getElementById('editDashboardModal')).show();
     }
 
@@ -1084,7 +1114,6 @@
         return alert("⚠️ บิลคำขอต้องมีรายการพัสดุอย่างน้อย 1 รายการครับ (หากต้องการยกเลิกทั้งบิลกรุณาใช้ปุ่มถังขยะสีแดงที่หน้า Dashboard)");
       }
 
-      // กวาดเอาข้อมูลพัสดุชุดล่าสุดที่ตรวจแก้แล้วใส่ Array
       itemRows.forEach(row => {
         const id = row.querySelector('.edit-iId').value;
         const name = row.querySelector('.edit-iName').value;
@@ -1110,7 +1139,7 @@
           region: document.getElementById('editRegion').value,
           area: document.getElementById('editArea').value,
           date: document.getElementById('editDate').value,
-          items: updatedItems // ✨ ส่งรายการพัสดุชุดที่จัดสรรใหม่ไปสับเปลี่ยนหลังบ้าน
+          items: updatedItems
         }
       };
 
@@ -1120,10 +1149,7 @@
           if (res.success) {
             bootstrap.Modal.getInstance(document.getElementById('editDashboardModal')).hide();
             alert(res.result || "✅ อัปเดตโครงสร้างบิลและรายการพัสดุเรียบร้อย!");
-            
-            // 🚨 รีเซ็ตคืนสิทธิ์ระบบเชื่อมต่อให้กล่อง Picker ขอยืมแบบปกติทำงานต่อเนื่องได้ทันที
             if (typeof resetNormalPickerBridge === "function") resetNormalPickerBridge();
-            
             refreshData();
           } else {
             alert("❌ Error: " + res.error);
@@ -1136,7 +1162,6 @@
         });
     };
 
-    // 🚨 ฟังก์ชันเชื่อมสะพานป้องกันตัวแปรค้างสิทธิ์หลังปิดกล่องแก้ไข
     function resetNormalPickerBridge() {
       window.selectItemFromPicker = function(id, name, unit, stock) {
         if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
@@ -1183,7 +1208,6 @@
         }).catch(err => { alert("Error connecting: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
     }
 
-    // 📦 🔄 ฟังก์ชันวาดการ์ดตรวจรับคืนพัสดุฉบับปรับปรุงตามบรีฟรูปภาพ (ดึงวันที่ยืม + ปรับดีไซน์ตามตัวอย่าง)
     function loadReturnList() {
       const container = document.getElementById('return-selector-list');
       container.innerHTML = '<div class="text-center p-4 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังดึงรายชื่อบิลพัสดุที่รอส่งคืน...</div>';
@@ -1343,6 +1367,7 @@
       if (activePage === 'page-dashboard') loadDashboardList(lastDashboardType);
       if (activePage === 'page-approve') loadPendingList();
       if (activePage === 'page-return') loadReturnList();
+      if (activePage === 'page-analytics') loadAnalyticsChartsPanel();
       
       updateNavBadges();
       setTimeout(() => { icon.classList.remove('spin-animation'); }, 1000);
@@ -1509,6 +1534,7 @@
         returnWebcamStream = null;
       }
     }
+
     function loadAnalyticsChartsPanel() {
       const overdueContainer = document.getElementById('overdue-analytics-container');
       overdueContainer.innerHTML = '<div class="text-center p-4 text-muted small"><div class="spinner-border text-danger spinner-border-sm me-2"></div>ระบบตรวจจับกำลังวิเคราะห์ประวัติวันค้างส่งพัสดุ...</div>';
@@ -1518,9 +1544,8 @@
         .then(resData => {
           // --- มิติที่ 1: วาดกราฟแท่งแนวตั้งแสดงจำนวนยืมรายเดือนแยกภาค ---
           const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
-          if (barChartInstance) barChartInstance.destroy(); // เคลียร์ขยะกราฟเก่าก่อนโหลดซ้ำ
+          if (barChartInstance) barChartInstance.destroy();
 
-          // จัดชุดสีสันพรีเมียมโปร่งแสงให้สอดรับกับแต่ละภูมิภาคหลักของไทย
           const colorPalette = {
             "ภาคเหนือ": "#4dadf7",
             "ภาคตะวันออกเฉียงเหนือ": "#ff922b",
