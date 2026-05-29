@@ -58,7 +58,7 @@
   .sidebar.collapsed .nav-text-side { display: none; }
 
   .badge-side {
-    position: absolute; top: 10px; right: 15px; background-color: #ff4757; color: white;
+    position: absolute; top: 14px; right: 20px; background-color: #ff4757; color: white;
     font-size: 10px; font-weight: bold; border-radius: 50%; min-width: 18px; height: 18px;
     display: flex; align-items: center; justify-content: center; border: 1.5px solid white;
   }
@@ -110,48 +110,6 @@
     .table-responsive::-webkit-scrollbar { height: 5px; }
     .table-responsive::-webkit-scrollbar-thumb { background: rgba(163, 29, 142, 0.2); border-radius: 10px; }
   }
-  .approval-stamp-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 2px solid #e9ecef;
-  }
-  .stamp-box {
-    text-align: center;
-    position: relative;
-    padding: 5px;
-    border-radius: 10px;
-    background: #fdfdfd;
-  }
-  .stamp-photo-wrapper {
-    width: 65px;
-    height: 80px;
-    margin: 0 auto 5px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    overflow: hidden;
-    position: relative;
-    background: #eee;
-  }
-  .stamp-photo-wrapper img.face {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .stamp-photo-wrapper img.sig {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    height: auto;
-    filter: drop-shadow(0 0 1px white);
-  }
-  .stamp-label { font-size: 0.65rem; font-weight: bold; color: var(--primary-color); display: block; }
-  .stamp-name { font-size: 0.7rem; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-  .stamp-date { font-size: 0.6rem; color: #dc3545; font-weight: bold; display: block; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -231,20 +189,20 @@
 
           <div class="row g-2 mb-4"> 
             <div class="col-4">
-              <div class="stat-card p-2 p-sm-3 text-center shadow-sm" onclick="loadDashboardList('pending')" style="cursor:pointer; background: #fff9db; border: 1px solid #ffe066; border-radius: 20px; min-height: 90px; display: flex; flex-direction: column; justify-content: center;">
-                <div class="text-warning fw-bold mb-1" style="font-size: 11px;">รอดำเนินการ</div>
+              <div class="stat-card p-2 p-sm-3 text-center shadow-sm" style="background: #fff9db; border: 1px solid #ffe066; border-radius: 20px; min-height: 90px; display: flex; flex-direction: column; justify-content: center;">
+                <div class="text-warning fw-bold mb-1" style="font-size: 11px;">รอดำเนินการอนุมัติ</div>
                 <h3 id="stat-pending" class="fw-bold mb-0" style="color: #f08c00; font-size: 24px;">0</h3>
               </div>
             </div>
             <div class="col-4">
-              <div class="stat-card p-2 p-sm-3 text-center shadow-sm" onclick="loadDashboardList('completed')" style="cursor:pointer; background: #ebfbee; border: 1px solid #b2f2bb; border-radius: 20px; min-height: 90px; display: flex; flex-direction: column; justify-content: center;">
-                <div class="text-success fw-bold mb-1" style="font-size: 11px;">อนุมัติแล้ว</div>
+              <div class="stat-card p-2 p-sm-3 text-center shadow-sm" style="background: #ebfbee; border: 1px solid #b2f2bb; border-radius: 20px; min-height: 90px; display: flex; flex-direction: column; justify-content: center;">
+                <div class="text-success fw-bold mb-1" style="font-size: 11px;">อนุมัติแล้ว (ค้างคืน)</div>
                 <h3 id="stat-completed" class="fw-bold mb-0" style="color: #2b8a3e; font-size: 24px;">0</h3>
               </div>
             </div>
             <div class="col-4">
-              <div class="stat-card p-2 p-sm-3 text-center shadow-sm" onclick="loadDashboardList('returned')" style="cursor:pointer; background: #e7f5ff; border: 1px solid #a5d8ff; border-radius: 20px; min-height: 90px; display: flex; flex-direction: column; justify-content: center;">
-                <div class="text-info fw-bold mb-1" style="font-size: 11px;">คืนแล้ว</div>
+              <div class="stat-card p-2 p-sm-3 text-center shadow-sm" style="background: #e7f5ff; border: 1px solid #a5d8ff; border-radius: 20px; min-height: 90px; display: flex; flex-direction: column; justify-content: center;">
+                <div class="text-info fw-bold mb-1" style="font-size: 11px;">คืนพัสดุสำเร็จ</div>
                 <h3 id="stat-returned" class="fw-bold mb-0" style="color: #1971c2; font-size: 24px;">0</h3>
               </div>
             </div>
@@ -345,7 +303,7 @@
         </div>
 
         <div id="page-return" class="page">
-          <h4><i class="bi bi-arrow-repeat me-2"></i>คืนพัสดุ</h4>
+          <h4><i class="bi bi-arrow-repeat me-2"></i>คืนพัสดุ (รายการรอยืนยัน)</h4>
           <div id="return-selector-list" class="list-group mb-4 rounded-4 shadow-sm"></div>
         </div>
       </div>
@@ -405,7 +363,12 @@
             <div class="mb-3"><label class="small fw-bold text-primary mb-1">วันที่คืน</label><input type="date" id="retDate" class="form-control mb-2" required></div>
             <div class="mb-3"><label class="small fw-bold text-primary mb-1">ชื่อผู้รับคืน</label><input type="text" id="retReceiver" placeholder="ชื่อ-นามสกุล ผู้รับคืน" class="form-control mb-2" required></div>
             
-            <div class="mb-3 text-center">
+            <div class="mb-4">
+              <label class="small fw-bold text-primary mb-1">ลายเซ็นผู้รับคืน</label>
+              <div class="sig-wrapper"><canvas id="pad-return"></canvas><div class="text-end p-1"><button type="button" class="btn btn-sm text-danger border-0" onclick="spReturn.clear()">ล้าง</button></div></div>
+            </div>
+
+            <div class="mb-3 text-center border-top pt-3">
               <label class="form-label small fw-bold text-primary d-block text-start"><i class="bi bi-camera-fill me-1"></i> กล้องถ่ายรูปผู้รับคืน (Face Verification)</label>
               <div class="bg-dark rounded-4 overflow-hidden position-relative shadow-sm" style="width: 100%; max-width: 320px; height: 240px; margin: 0 auto;">
                 <video id="retWebcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
@@ -417,7 +380,7 @@
                 </div>
               </div>
               
-              <div class="d-flex justify-content-center gap-2 mt-2">
+              <div class="d-flex justify-content-center gap-2 mt-2 mb-3">
                 <button type="button" id="btn-ret-capture" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="takeReturnSnapshot()"><i class="bi bi-camera"></i> กดถ่ายรูป</button>
                 <button type="button" id="btn-ret-retake" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeReturnSnapshot()" style="display: none;"><i class="bi bi-arrow-counterclockwise"></i> ถ่ายใหม่</button>
                 <button type="button" id="btn-ret-toggle" class="btn btn-sm btn-light border rounded-pill px-3 text-secondary fw-bold" onclick="switchReturnCamera()"><i class="bi bi-arrow-repeat"></i> สลับกล้อง</button>
@@ -425,10 +388,6 @@
               <canvas id="return-capture-canvas" style="display: none;"></canvas>
             </div>
 
-            <div class="mb-4">
-              <label class="small fw-bold text-primary mb-1">ลายเซ็นผู้รับคืน</label>
-              <div class="sig-wrapper"><canvas id="pad-return"></canvas><div class="text-end p-1"><button type="button" class="btn btn-sm text-danger border-0" onclick="spReturn.clear()">ล้าง</button></div></div>
-            </div>
             <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm">บันทึกการรับคืนพัสดุ</button>
           </form>
         </div>
@@ -447,42 +406,7 @@
           <div id="modalItemInfoNew"></div>
           <hr class="my-3 opacity-25">
           
-          <div class="mb-3 mt-3">
-            <label class="small fw-bold text-primary mb-2"><i class="bi bi-camera-video-fill me-1"></i> กล้องถ่ายรูปยืนยันตัวตน (Face Verification)</label>
-            
-            <div class="rounded-4 overflow-hidden border bg-dark position-relative shadow-sm" style="width: 100%; max-width: 320px; height: 240px; margin: 0 auto;">
-              <video id="webcam-preview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-              
-              <div id="snapshot-preview-overlay" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; background: #000;">
-                <img id="snapshot-img" style="width: 100%; height: 100%; object-fit: cover;">
-                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2">
-                  <span class="badge bg-success rounded-pill px-2.5 py-1.5 shadow-sm" style="font-size: 0.7rem;"><i class="bi bi-check-circle-fill"></i> จับภาพสำเร็จ</span>
-                </div>
-              </div>
-
-              <div class="position-absolute top-50 start-50 translate-middle text-white opacity-25" id="camera-loading">
-                <div class="spinner-border spinner-border-sm me-1"></div> กำลังเปิดกล้อง...
-              </div>
-            </div>
-            
-            <div class="d-flex justify-content-center gap-2 mt-3">
-              <button type="button" id="btn-capture-snapshot" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold" onclick="takeSnapshot()">
-                <i class="bi bi-camera-fill me-1"></i> กดถ่ายรูป
-              </button>
-              <button type="button" id="btn-retake-snapshot" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeSnapshot()" style="display: none;">
-                <i class="bi bi-arrow-counterclockwise me-1"></i> ถ่ายใหม่
-              </button>
-              <button type="button" id="btn-toggle-camera" class="btn btn-sm btn-light border rounded-pill px-3 text-secondary fw-bold" onclick="switchCamera()">
-                <i class="bi bi-arrow-repeat me-1"></i> สลับกล้อง
-              </button>
-            </div>
-
-            <canvas id="camera-capture-canvas" style="display: none;"></canvas>
-          </div>
-
-          <hr class="my-3 opacity-25">
-          
-          <div id="card-step1" style="display:none;">
+          <div id="card-step1" style="display:none;" class="mb-3">
             <label class="small fw-bold text-primary mb-1">ขั้นตอนที่ 1: หัวหน้าแผนก</label>
             <input type="text" id="name1" placeholder="ชื่อ-นามสกุล ผู้อนุมัติ" class="form-control mb-2 shadow-none">
             <input type="text" id="pos1" placeholder="ตำแหน่ง" class="form-control mb-2 shadow-none">
@@ -493,7 +417,7 @@
             <button type="button" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-bold shadow-sm" onclick="confirmStep(1)">บันทึกการอนุมัติ</button>
           </div>
           
-          <div id="card-step2" style="display:none;">
+          <div id="card-step2" style="display:none;" class="mb-3">
             <label class="small fw-bold text-primary mb-1">ขั้นตอนที่ 2: ผู้จัดการ</label>
             <input type="text" id="name2" placeholder="ชื่อ-นามสกุล ผู้อนุมัติ" class="form-control mb-2 shadow-none">
             <input type="text" id="pos2" placeholder="ตำแหน่ง" class="form-control mb-2 shadow-none">
@@ -504,7 +428,7 @@
             <button type="button" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-bold shadow-sm" onclick="confirmStep(2)">บันทึกการอนุมัติ</button>
           </div>
           
-          <div id="card-step3" style="display:none;">
+          <div id="card-step3" style="display:none;" class="mb-3">
             <label class="small fw-bold text-primary mb-1">ขั้นตอนที่ 3: ผู้ควบคุมพัสดุ</label>
             <input type="text" id="name3" placeholder="ชื่อ-นามสกุล ผู้อนุมัติ" class="form-control mb-2 shadow-none">
             <input type="text" id="pos3" placeholder="ตำแหน่ง" class="form-control mb-2 shadow-none">
@@ -514,28 +438,145 @@
             </div>
             <button type="button" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-bold shadow-sm" onclick="confirmStep(3)">บันทึกการอนุมัติ</button>
           </div>
-          
+
+          <div class="mb-3 mt-3 border-top pt-3">
+            <label class="small fw-bold text-primary mb-2"><i class="bi bi-camera-video-fill me-1"></i> กล้องถ่ายรูปยืนยันตัวตน (Face Verification)</label>
+            <div class="rounded-4 overflow-hidden border bg-dark position-relative shadow-sm" style="width: 100%; max-width: 320px; height: 240px; margin: 0 auto;">
+              <video id="webcam-preview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <div id="snapshot-preview-overlay" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; background: #000;">
+                <img id="snapshot-img" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2">
+                  <span class="badge bg-success rounded-pill px-2.5 py-1.5 shadow-sm" style="font-size: 0.7rem;"><i class="bi bi-check-circle-fill"></i> จับภาพสำเร็จ</span>
+                </div>
+              </div>
+              <div class="position-absolute top-50 start-50 translate-middle text-white opacity-25" id="camera-loading">
+                <div class="spinner-border spinner-border-sm me-1"></div> กำลังเปิดกล้อง...
+              </div>
+            </div>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+              <button type="button" id="btn-capture-snapshot" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold" onclick="takeSnapshot()"><i class="bi bi-camera-fill me-1"></i> กดถ่ายรูป</button>
+              <button type="button" id="btn-retake-snapshot" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeSnapshot()" style="display: none;"><i class="bi bi-arrow-counterclockwise me-1"></i> ถ่ายใหม่</button>
+              <button type="button" id="btn-toggle-camera" class="btn btn-sm btn-light border rounded-pill px-3 text-secondary fw-bold" onclick="switchCamera()"><i class="bi bi-arrow-repeat me-1"></i> สลับกล้อง</button>
+            </div>
+            <canvas id="camera-capture-canvas" style="display: none;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="viewDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-0 bg-light pb-2"><h6 class="fw-bold mb-0">🔍 รายละเอียดประวัติพัสดุฉบับสมบูรณ์</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4" id="viewDetailModalBody"></div>
+        <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-secondary w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">ปิดหน้าต่าง</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cancelReasonModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-0 pb-0"><h6 class="fw-bold text-danger mb-0"><i class="bi bi-exclamation-triangle-fill"></i> ระบุเหตุผลการยกเลิกใบงาน</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4 pt-2">
+          <input type="hidden" id="cancelTsKey"><input type="hidden" id="cancelEmpId">
+          <div class="mb-3">
+            <label class="small fw-bold text-secondary mb-1">เหตุผลความจำเป็นในการยกเลิก:</label>
+            <textarea id="cancelReasonInput" class="form-control rounded-3 shadow-none border-2" rows="3" placeholder="เช่น กรอกข้อมูลรายการผิด หรือยกเลิกหน้างาน..." required></textarea>
+          </div>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-danger py-2 rounded-pill fw-bold shadow-sm" onclick="submitCancelOrder(this)"><i class="bi bi-trash-fill me-1"></i>ยืนยันส่งเรื่องยกเลิกบิล</button>
+            <button type="button" class="btn btn-light py-2 rounded-pill text-muted" data-bs-dismiss="modal">ปิด</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editDashboardModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในบิลคำขอ</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 pt-3">
+          <form id="editDashboardForm">
+            <input type="hidden" id="editTsKey">
+            <input type="hidden" id="editEmpId">
+            
+            <h6 class="small fw-bold text-secondary border-bottom pb-1 mb-2">📋 ข้อมูลหัวบิลผู้ขอยืม</h6>
+            <div class="row g-2 mb-2.5">
+              <div class="col-md-6">
+                <label class="small fw-bold text-primary mb-1">ชื่อผู้ขอยืม</label>
+                <input type="text" id="editUserName" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" required>
+              </div>
+              <div class="col-md-6">
+                <label class="small fw-bold text-primary mb-1">สังกัด/แผนก</label>
+                <input type="text" id="editDept" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" required>
+              </div>
+            </div>
+            
+            <div class="row g-2 mb-3">
+              <div class="col-4">
+                <label class="small fw-bold text-primary mb-1">ภาค</label>
+                <select id="editRegion" class="form-select border-2 rounded-3 shadow-none" style="border-color:#edf2f7;" required>
+                  <option value="ภาคเหนือ">ภาคเหนือ</option>
+                  <option value="ภาคตะวันออกเฉียงเหนือ">ภาคตะวันออกเฉียงเหนือ</option>
+                  <option value="ภาคกลาง">ภาคกลาง</option>
+                  <option value="ภาคใต้">ภาคใต้</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="small fw-bold text-primary mb-1">เขต</label>
+                <select id="editArea" class="form-select border-2 rounded-3 shadow-none" style="border-color:#edf2f7;" required>
+                  <option value="เขต 1">เขต 1</option>
+                  <option value="เขต 2">เขต 2</option>
+                  <option value="เขต 3">เขต 3</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="small fw-bold text-primary mb-1">วันที่ยืมพัสดุ</label>
+                <input type="text" id="editDate" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" placeholder="dd/MM/yyyy" required>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                <h6 class="small fw-bold text-secondary mb-0">📦 รายการพัสดุเบิกยืมในบิลนี้</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addEditItemRow()"><i class="bi bi-plus-lg me-1"></i> เพิ่มพัสดุเพิ่ม</button>
+              </div>
+              <div id="edit-items-container"></div>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-warning text-dark py-2 rounded-pill fw-bold shadow-sm"><i class="bi bi-save-fill me-1"></i> บันทึกการอัปเดตข้อมูลทั้งหมด</button>
+              <button type="button" class="btn btn-light py-2 rounded-pill text-muted" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzrFYojYMGoctNus1Vv-7rTudR1XKaGOcNA5eRj3ZtNFFlwEy87QASPgIM5buO0SNxW/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx4EiKhXlFmcsLzPUdKS2VfR4WAVLnfaGxD_Kkro55PYNp3rGOGiDglPRHECHmkermD/exec";
 
     const sp1 = new SignaturePad(document.getElementById('pad1'));
     const sp2 = new SignaturePad(document.getElementById('pad2'));
     const sp3 = new SignaturePad(document.getElementById('pad3'));
     const spReturn = new SignaturePad(document.getElementById('pad-return'));
     
-    let currentFacingMode = "user"; // คุมกล้องฝั่งอนุมัติ
-    let returnFacingMode = "user";  // 🎯 คุมกล้องฝั่งรับคืนพัสดุแยกเด็ดขาด
+    let currentFacingMode = "user"; 
+    let returnFacingMode = "user";  
     
     let capturedPhotoBase64 = null; 
     let returnPhotoBase64 = null; 
     let currentItem = null;
     let currentInventoryData = [];
     let activeRowElement = null;
+    let currentActiveEditRow = null; // 🛠️ ตัวแปรล็อคแถวซ่อมบักฟอร์มแก้ไขแยกขาด
     let selectedDashItem = null;
     let lastInventoryType = 'all'; 
     let lastDashboardType = 'pending'; 
@@ -637,6 +678,21 @@
     function openPicker(el) { 
       activeRowElement = el.closest('.item-row'); 
       if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
+      
+      // คืนค่าให้ฝั่งฟอร์มเบิกยืมของปกติใช้งานได้เต็มแต้ม
+      window.selectItemFromPicker = function(id, name, unit, stock) {
+        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
+        if (activeRowElement) {
+          activeRowElement.querySelector('.iId').value = id;
+          activeRowElement.querySelector('.iName').value = name;
+          activeRowElement.querySelector('.iUnit').innerText = unit || 'หน่วย';
+          activeRowElement.querySelector('.iQty').max = stock;
+          activeRowElement.querySelector('.iQty').placeholder = "สูงสุด " + stock;
+          activeRowElement.querySelector('.iQty').focus();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
+      };
+
       renderPickerList(currentInventoryData);
       new bootstrap.Modal(document.getElementById('inventoryPickerModal')).show(); 
     }
@@ -660,19 +716,6 @@
       }).join('');
     }
     function filterPickerInventory() { renderPickerList(currentInventoryData); }
-
-    function selectItemFromPicker(id, name, unit, stock) {
-      if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
-      if (activeRowElement) {
-        activeRowElement.querySelector('.iId').value = id;
-        activeRowElement.querySelector('.iName').value = name;
-        activeRowElement.querySelector('.iUnit').innerText = unit || 'หน่วย';
-        activeRowElement.querySelector('.iQty').max = stock;
-        activeRowElement.querySelector('.iQty').placeholder = "สูงสุด " + stock;
-        activeRowElement.querySelector('.iQty').focus();
-      }
-      bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
-    }
 
     function addItemRow() {
       const container = document.getElementById('items-container');
@@ -738,31 +781,45 @@
         }).catch(err => console.error("Error dash stats:", err));
     }
 
+    function updateNavBadges() {
+      fetch(`${GAS_URL}?action=getItemsToReturn`)
+        .then(res => res.json())
+        .then(data => {
+          const badgeReturn = document.getElementById('nav-badge-return');
+          if (badgeReturn) {
+            if (data && data.length > 0) {
+              badgeReturn.innerText = data.length;
+              badgeReturn.style.display = 'flex';
+            } else {
+              badgeReturn.style.display = 'none';
+            }
+          }
+        })
+        .catch(err => console.error("Error updating return badge:", err));
+    }
+
     function loadDashboardList(type) {
       lastDashboardType = type; 
       const listDiv = document.getElementById('dashboard-list');
-      listDiv.innerHTML = '<div class="text-center p-4 small text-muted">กำลังโหลดข้อมูล...</div>';
+      listDiv.innerHTML = '<div class="text-center p-4 small text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังประมวลผลตารางภาพรวม...</div>';
       
-      fetch(`${GAS_URL}?action=getItemsByStatus&type=${type}&region=${encodeURIComponent(currentSelectedRegion)}`)
+      fetch(`${GAS_URL}?action=getAllItemsDashboard&region=${encodeURIComponent(currentSelectedRegion)}`)
         .then(res => res.json())
         .then(items => {
           if (!items || items.length === 0) { 
-            listDiv.innerHTML = '<div class="text-center p-5 text-muted small bg-white rounded-4 shadow-sm border">ไม่มีข้อมูลของ' + (currentSelectedRegion === 'ทั้งหมด' ? 'ภาพรวม' : currentSelectedRegion) + 'ในส่วนนี้</div>'; 
+            listDiv.innerHTML = '<div class="text-center p-5 text-muted small bg-white rounded-4 shadow-sm border">ไม่มีข้อมูลพัสดุในระบบของคลังภูมิภาคนี้</div>'; 
             return; 
           }
         
           let html = `
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white animate-fade-in">
               <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.81rem;">
                   <thead class="table-light fw-bold" style="background-color: #f8f9fa; border-bottom: 2px solid #edf2f7; white-space: nowrap;">
-                    <!-- 🎨 ปรับหัวตารางให้เป็นสีดำเข้มเห็นชัด -->
                     <tr class="text-dark">
                       <th class="ps-4 py-3">ชื่อผู้ยืม</th>
                       <th class="py-3">รหัสพนักงาน</th>
-                      <th class="py-3">สังกัด</th>
-                      <th class="py-3">ภาค</th>
-                      <th class="py-3">เขต</th>
+                      <th class="py-3">สังกัด/ภูมิภาค</th>
                       <th class="py-3">รหัสพัสดุ</th>
                       <th class="py-3">ชื่อพัสดุ</th>
                       <th class="py-3">จำนวน</th>
@@ -770,54 +827,51 @@
                       <th class="py-3">วันที่อนุมัติ</th>
                       <th class="py-3">วันที่ส่งคืน</th>
                       <th class="py-3">วันที่รับคืน</th>
-                      <th class="pe-4 py-3 text-end">สถานะ</th>
+                      <th class="py-3">สถานะ</th>
+                      <th class="pe-4 py-3 text-center" style="min-width: 120px;">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody style="white-space: nowrap;">
           `;
 
           items.forEach((group) => {
-            let isReturned = (group.status === "คืนแล้ว");
-            let isComplete = (group.status === "อนุมัติสมบูรณ์");
-            
             let badgeStyle = "";
-            if (isReturned) badgeStyle = "background-color: #e2e8f0; color: #475569;";
-            else if (isComplete) badgeStyle = "background-color: #d1fae5; color: #065f46;";
+            if (group.status.includes("ยกเลิก")) badgeStyle = "background-color: #fee2e2; color: #991b1b;";
+            else if (group.status === "คืนแล้ว") badgeStyle = "background-color: #e2e8f0; color: #475569;";
+            else if (group.status === "อนุมัติสมบูรณ์") badgeStyle = "background-color: #d1fae5; color: #065f46;";
             else if (group.status === "กำลังส่งคืน") badgeStyle = "background-color: #e0f2fe; color: #0369a1;";
-            else if (group.status === "รอผู้จัดการ" || group.status === "รอผู้ควบคุมพัสดุ") badgeStyle = "background-color: #dbeafe; color: #1e40af;";
             else badgeStyle = "background-color: #fef3c7; color: #92400e;"; 
-
-            let rowOverdueClass = group.isOverdue ? 'style="background-color: #fff5f5;" class="table-danger"' : '';
-            let overdueBadge = group.isOverdue ? '<span class="badge bg-danger ms-1" style="font-size: 0.65rem;">⚠️ เกิน 7 วัน</span>' : '';
 
             group.items.forEach((item, index) => {
               html += `
-                <tr ${rowOverdueClass} onclick='openDashReturnModal(${JSON.stringify(group)})' style="cursor: pointer;">
-                  <!-- 🎨 เปลี่ยนคลาสสีของตัวหนังสือทุกช่องในแถวให้เป็น text-dark (สีดำเข้มชัดเจน) -->
+                <tr>
                   <td class="ps-4 py-3 fw-bold text-dark">${index === 0 ? group.userName : `<span class="text-muted opacity-25">”</span>`}</td>
                   <td class="py-3 text-dark">${index === 0 ? group.empId : ""}</td>
-                  <td class="py-3 text-dark">${index === 0 ? (group.dept || "-") : ""}</td>
-                  <td class="py-3 text-dark fw-bold">${index === 0 ? (group.region || "-") : ""}</td>
-                  <td class="py-3 text-dark">${index === 0 ? (group.area || "-") : ""}</td>
+                  <td class="py-3 text-dark">${index === 0 ? `${group.dept || '-'} (${group.area || '-'})` : ""}</td>
                   
-                  <td class="py-3 font-monospace text-dark" style="font-size: 0.8rem; font-weight: 600;">${item.itemId}</td>
+                  <td class="py-3 font-monospace text-dark" style="font-size: 0.75rem; font-weight: 600;">${item.itemId}</td>
                   <td class="py-3 fw-bold text-dark text-wrap">${item.itemName}</td>
                   <td class="py-3 text-dark">
-                    <span class="fw-bold text-primary" style="font-size: 0.9rem;">${item.itemQty}</span>
-                    <span class="fw-bold">${item.itemUnit || "หน่วย"}</span>
+                    <span class="fw-bold text-primary" style="font-size: 0.85rem;">${item.itemQty}</span>
+                    <span class="text-secondary small">${item.itemUnit || "หน่วย"}</span>
                   </td>
                   
                   <td class="py-3 text-dark">${index === 0 ? group.date : ""}</td>
-                  <td class="py-3 text-dark">${index === 0 ? group.approveDate : ""}</td>
-                  <td class="py-3 text-dark fw-bold">${index === 0 ? group.returnDate : ""}</td>
-                  <td class="py-3 text-dark fw-bold">${index === 0 ? group.receiveDate : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? (group.approveDate || "-") : ""}</td>
+                  <td class="py-3 text-secondary">${index === 0 ? (group.returnDate || "-") : ""}</td>
+                  <td class="py-3 text-success fw-bold">${index === 0 ? (group.receiveDate || "-") : ""}</td>
                   
-                  <td class="pe-4 py-3 text-end">
+                  <td class="py-3">
+                    ${index === 0 ? `<span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="font-size: 0.68rem; ${badgeStyle}">${group.status}</span>` : ""}
+                  </td>
+                  
+                  <td class="pe-4 py-2 text-center">
                     ${index === 0 ? `
-                      <span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="font-size: 0.7rem; ${badgeStyle}">
-                        ${group.status}
-                      </span>
-                      ${overdueBadge}
+                      <div class="btn-group gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" title="ส่องดูรายละเอียดประวัติฉบับเต็ม" onclick='viewFullDetailsDetail(${JSON.stringify(group)})'><i class="bi bi-eye-fill"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-warning rounded-3 px-2 py-1" title="แก้ไขรายการ" onclick='editDashboardRow(${JSON.stringify(group)})'><i class="bi bi-pencil-fill"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" title="สั่งยกเลิกบิลยืมพัสดุ" onclick='cancelDashboardRow("${group.tsKey}", "${group.empId}")' ${group.status.includes("ยกเลิก") || group.status === "คืนแล้ว" ? "disabled" : ""}><i class="bi bi-trash-fill"></i></button>
+                      </div>
                     ` : ""}
                   </td>
                 </tr>
@@ -827,125 +881,233 @@
           
           html += `</tbody></table></div></div>`;
           listDiv.innerHTML = html;
-        }).catch(err => console.error("Error listing table:", err));
+        }).catch(err => console.error("Error drawing unified dashboard list:", err));
     }
 
-    function openDashReturnModal(item) {
-      if (item.status !== "อนุมัติสมบูรณ์") return;
-      selectedDashItem = item;
-      
-      document.getElementById('dashReturnInfo').innerHTML = `
-        <div class="approval-info-box shadow-sm mb-3" style="background-color: #fdf2fb; border: 1px solid #f9d8f3; border-radius: 15px; padding: 15px;">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <div class="small">
-              <b class="text-dark" style="font-size: 0.95rem;"><i class="bi bi-person-fill text-primary"></i> ${item.userName}</b> 
-              <span class="ms-2 badge bg-white text-primary border" style="font-size: 0.7rem;">ID: ${item.empId}</span>
-            </div>
-            <div class="small text-muted" style="font-size: 0.75rem;"><b>วันที่ยืม:</b> ${item.date}</div>
-          </div>
-          <div class="d-flex flex-wrap gap-3 small text-muted pt-1 border-top" style="font-size: 0.78rem;">
-            <div><b class="text-primary">สังกัด:</b> <span class="text-dark fw-bold">${item.dept || '-'}</span></div>
-            <div><b class="text-primary">ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
-            <div><b class="text-primary">เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
-          </div>
-        </div>`;
-        
-      const checklistDiv = document.getElementById('dash-item-checklist');
-      if (item.items && item.items.length > 0) {
-        checklistDiv.innerHTML = item.items.map((p, index) => `
-          <div class="list-group-item d-flex justify-content-between align-items-center py-2 border-0 border-bottom">
-            <div class="d-flex align-items-center">
-              <input class="form-check-input me-3 dash-item-cb" type="checkbox" value="${index}" id="dash-chk-${index}" checked>
-              <label class="form-check-label" for="dash-chk-${index}">
-                <div class="fw-bold text-dark" style="font-size: 0.85rem;">${p.itemName}</div>
-                <div class="text-muted" style="font-size: 0.7rem;">รหัส: ${p.itemId}</div>
-              </label>
-            </div>
-            <span class="badge bg-light text-primary rounded-pill border">${p.itemQty} ${p.itemUnit}</span>
-          </div>`).join('');
-      } else { checklistDiv.innerHTML = '<div class="p-3 text-center text-muted">ไม่พบรายการพัสดุ</div>'; }
-      new bootstrap.Modal(document.getElementById('dashReturnModal')).show();
-    }
+    function viewFullDetailsDetail(group) {
+      const getImgHtml = (photoUrl) => {
+        if(!photoUrl || photoUrl === "-" || photoUrl.includes("ไม่ได้แนบ") || photoUrl.includes("ขัดข้อง")) {
+          return `<div class="p-2 text-center text-muted bg-white border border-light rounded-3 small" style="height:90px; display:flex; align-items:center; justify-content:center; font-size:10px;">ไม่มีรูปถ่าย</div>`;
+        }
+        let clean = photoUrl;
+        if (photoUrl.includes("id=")) {
+          let matches = photoUrl.match(/id=([^&"'\s)]+)/);
+          if (matches) clean = "https://drive.google.com/thumbnail?id=" + matches[1] + "&sz=s200";
+        }
+        return `<img src="${clean}" class="rounded-3 shadow-sm border border-light" style="width:100%; height:95px; object-fit:cover; display:block;">`;
+      };
 
-    function openReturnModal(item) {
-      window.currentReturnItem = item;
-      
-      const regionVal = item.region || (item.items && item.items[0] ? item.items[0].region : '') || '-';
-      const areaVal = item.area || (item.items && item.items[0] ? item.items[0].area : '') || '-';
-      
-      const infoHtml = `
-        <div class="p-3 rounded-4 mb-3" style="background-color: #fdf2fb; border: 1px solid #f9d8f3; font-size: 0.85rem;">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div><b class="text-primary"><i class="bi bi-person-fill"></i> ชื่อผู้ยืม :</b> <span class="text-dark fw-bold">${item.userName}</span></div>
-            <div><b class="text-dark">รหัส :</b> <span class="text-secondary fw-bold">${item.empId}</span></div>
-          </div>
-          <div class="d-flex flex-wrap align-items-center gap-3 pt-2 border-top text-muted" style="font-size: 0.78rem;">
-            <div><b class="text-primary">สังกัด :</b> <span class="text-dark fw-bold">${item.dept || '-'}</span></div>
-            <div><b class="text-primary">ภาค :</b> <span class="text-dark fw-bold">${regionVal}</span></div>
-            <div><b class="text-primary">เขต :</b> <span class="text-dark fw-bold">${areaVal}</span></div>
-            <div class="ms-auto"><b class="text-danger">วันที่ยืม :</b> <span class="text-dark fw-bold">${item.date || '-'}</span></div>
-          </div>
-        </div>`;
-      
-      document.getElementById('returnItemInfo').innerHTML = infoHtml; 
+      const getSigHtml = (sigUrl, heightPx = 45) => {
+        if(!sigUrl || sigUrl === "-" || sigUrl.includes("ลายเซ็นไม่สำเร็จ") || sigUrl.includes("รับคืนผ่านระบบ")) {
+          return `<div class="p-1 text-center text-muted bg-white border border-light rounded-3 small mb-1.5" style="height:${heightPx}px; display:flex; align-items:center; justify-content:center; font-size:9px;">ไม่มีภาพลายเซ็น</div>`;
+        }
+        let clean = sigUrl;
+        if (sigUrl.includes("id=")) {
+          let matches = sigUrl.match(/id=([^&"'\s)]+)/);
+          if (matches) clean = "https://drive.google.com/thumbnail?id=" + matches[1] + "&sz=s200";
+        }
+        return `
+          <div class="my-1.5 mx-auto overflow-hidden rounded-3 border border-light shadow-sm" style="width:100%; max-width:80px; height:${heightPx}px; background:#fff;">
+            <img src="${clean}" style="width:100%; height:100%; object-fit:contain; display:block;">
+          </div>`;
+      };
 
-      const listDiv = document.getElementById('checkable-return-list');
-      if (listDiv) {
-        listDiv.innerHTML = item.items.map((p, index) => `
-          <div class="list-group-item d-flex justify-content-between align-items-center py-2.5 bg-transparent border-0 border-bottom" style="border-color: #edf2f7 !important;">
-            <div class="d-flex align-items-start" style="flex: 1;">
-              <input class="form-check-input me-3 item-checkbox mt-1" type="checkbox" value="${index}" id="chk-${index}" checked style="cursor: pointer;">
-              
-              <label class="form-check-label" for="chk-${index}" style="cursor: pointer; flex: 1;">
-                <div class="fw-bold text-dark" style="font-size: 0.88rem; line-height: 1.4;">
-                  ${index + 1}. ${p.itemName}
-                </div>
-                <div class="text-muted" style="font-size: 0.72rem; margin-top: 2px;">
-                  รหัสพัสดุ: ${p.itemId}
-                </div>
-              </label>
-            </div>
-            
-            <div class="text-end ps-3" style="min-width: 90px;">
-              <span class="text-muted small" style="font-size: 0.75rem;">จำนวน: </span>
-              <span class="text-primary fw-bold" style="font-size: 0.85rem;">${p.itemQty}</span>
-              <span class="text-dark small" style="font-size: 0.75rem;"> ${p.itemUnit || 'ต้น'}</span>
-            </div>
-          </div>`).join('');
+      let itemsLi = (group.items || []).map((p, idx) => `
+        <div class="d-flex justify-content-between border-bottom py-1.5" style="border-color:#edf2f7 !important;">
+          <span><b>${idx + 1}.</b> ${p.itemName} <small class="text-muted">(${p.itemId})</small></span>
+          <span class="text-primary fw-bold">${p.itemQty} <span class="text-dark small">${p.itemUnit}</span></span>
+        </div>
+      `).join('');
+
+      let returnSignaturesStampHtml = `<div class="text-center text-muted small border rounded-3 p-3 bg-white opacity-50 d-flex align-items-center justify-content-center" style="height:100%; min-height:150px; border-style: dashed !important; font-size: 11px;">รอตรวจรับเข้าคลัง</div>`;
+      
+      if(group.status === "คืนแล้ว" || (group.retReceiver && group.retReceiver !== "-")) {
+        returnSignaturesStampHtml = `
+          <div class="p-2 border rounded-4 bg-white text-center shadow-sm" style="border-color: #b2f2bb !important; background: #f8fbf9 !important; min-height: 155px;">
+            <small class="fw-bold text-success d-block mb-1" style="font-size:0.65rem;"><i class="bi bi-patch-check-fill"></i> เจ้าหน้าที่พัสดุรับคืน</small>
+            <div class="mx-auto mb-1" style="width:60px; height:95px;">${getImgHtml(group.retPhoto)}</div>
+            ${getSigHtml(group.retSig, 40)}
+            <span class="small d-block text-dark text-truncate fw-bold" style="font-size:0.72rem; max-width:100px; margin:0 auto;">(${group.retReceiver})</span>
+          </div>
+        `;
       }
-      
-      const now = new Date();
-      const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
-      document.getElementById('retDate').value = `${year}-${month}-${day}`; 
-      
-      initReturnCamera();
-      
-      new bootstrap.Modal(document.getElementById('returnModal')).show();
-      spReturn.clear(); setTimeout(() => { resizeCanvas(spReturn.canvas); }, 500);
+
+      let detailHtml = `
+        <div class="p-3 rounded-4 bg-light mb-3" style="font-size:0.85rem;">
+          <h6 class="fw-bold text-dark mb-2 border-bottom pb-1"><i class="bi bi-person-badge text-primary"></i> ข้อมูลบิลผู้ขอยืม</h6>
+          <div class="text-dark"><b>ชื่อผู้ยืม:</b> ${group.userName} | <b>รหัสพนักงาน:</b> ${group.empId}</div>
+          <div class="text-dark"><b>สังกัดแผนก:</b> ${group.dept} | <b>ภาค-เขต:</b> ${group.region} / ${group.area}</div>
+          <div class="text-dark"><b>วันที่ยืมพัสดุ:</b> ${group.date}</div>
+          <div class="text-dark mt-1"><b>สถานะปัจจุบัน:</b> <span class="badge text-dark rounded-pill border" style="background: #fff; font-size:0.75rem;">${group.status}</span></div>
+        </div>
+        
+        <div class="p-3 rounded-4 bg-light mb-3" style="font-size:0.85rem;">
+          <h6 class="fw-bold text-dark mb-2 border-bottom pb-1"><i class="bi bi-box-seam text-info"></i> รายการพัสดุที่ขอเบิกยืม</h6>
+          <div>${itemsLi}</div>
+        </div>
+        
+        <h6 class="fw-bold text-dark mb-2 small ps-1"><i class="bi bi-shield-check text-success"></i> ตรรกะและประวัติการเซ็นแสตมป์อนุมัติ</h6>
+        <div class="row g-2 text-center mb-3">
+          <div class="col-4 border-end">
+            <small class="fw-bold text-secondary d-block" style="font-size:0.65rem; margin-bottom:4px;">1. หัวหน้าแผนก</small>
+            <div class="mx-auto mb-2" style="width:75px; height:105px;">${getImgHtml(group.appr1?.photo)}</div>
+            ${getSigHtml(group.appr1?.sig)}
+            <span class="small d-block text-dark text-truncate fw-bold">(${group.appr1?.name && group.appr1.name !== "-" ? group.appr1.name : 'รออนุมัติ'})</span>
+            <span class="d-block text-danger fw-normal" style="font-size: 0.65rem; margin-top: 2px;">📅 ${group.appr1?.date && group.appr1.date !== "-" ? group.appr1.date : "-"}</span>
+          </div>
+          <div class="col-4 border-end">
+            <small class="fw-bold text-secondary d-block" style="font-size:0.65rem; margin-bottom:4px;">2. ผู้จัดการ</small>
+            <div class="mx-auto mb-2" style="width:75px; height:105px;">${getImgHtml(group.appr2?.photo)}</div>
+            ${getSigHtml(group.appr2?.sig)}
+            <span class="small d-block text-dark text-truncate fw-bold">(${group.appr2?.name && group.appr2.name !== "-" ? group.appr2.name : 'รออนุมัติ'})</span>
+            <span class="d-block text-danger fw-normal" style="font-size: 0.65rem; margin-top: 2px;">📅 ${group.appr2?.date && group.appr2.date !== "-" ? group.appr2.date : "-"}</span>
+          </div>
+          <div class="col-4">
+            <small class="fw-bold text-secondary d-block" style="font-size:0.65rem; margin-bottom:4px;">3. คลังพัสดุ</small>
+            <div class="mx-auto mb-2" style="width:75px; height:105px;">${getImgHtml(group.appr3?.photo)}</div>
+            ${getSigHtml(group.appr3?.sig)}
+            <span class="small d-block text-dark text-truncate fw-bold">(${group.appr3?.name && group.appr3.name !== "-" ? group.appr3.name : 'รออนุมัติ'})</span>
+            <span class="d-block text-danger fw-normal" style="font-size: 0.65rem; margin-top: 2px;">📅 ${group.appr3?.date && group.appr3.date !== "-" ? group.appr3.date : "-"}</span>
+          </div>
+        </div>
+        
+        <div class="p-3 rounded-4 bg-light" style="font-size:0.85rem;">
+          <h6 class="fw-bold text-dark mb-2 border-bottom pb-1"><i class="bi bi-arrow-counterclockwise text-danger"></i> ประวัติการเซ็นตรวจรับคืนสินค้าคลัง</h6>
+          <div class="row g-2 align-items-center">
+            <div class="col-7 text-dark" style="line-height: 1.7;">
+              <div><b>วันที่แจ้งส่งคืน:</b> <span class="text-secondary">${group.returnDate || '-'}</span></div>
+              <div><b>ผู้ตรวจสอบรับคืน:</b> <span class="fw-bold text-dark">${group.retReceiver || '-'}</span></div>
+              <div><b>วันที่เข้าสต็อก:</b> <span class="text-success fw-bold">${group.receiveDate || '-'}</span></div>
+            </div>
+            <div class="col-5">
+              ${returnSignaturesStampHtml}
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('viewDetailModalBody').innerHTML = detailHtml;
+      new bootstrap.Modal(document.getElementById('viewDetailModal')).show();
     }
 
-    function selectItemToReturn(item) { openReturnModal(item); }
+    // 🛠️ ✨ [ฟังก์ชันวิกฤตความปลอดภัย] แยกล็อคตำแหน่งการสืบค้น Picker สำหรับกล่องแก้ไขบนหน้า Dashboard โดยเฉพาะ
+    function openEditPicker(el) {
+      currentActiveEditRow = el.closest('.edit-item-row');
+      if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
+      
+      // สับเปลี่ยนสิทธิ์ล็อกให้ผลลัพธ์จากคลังวิ่งเข้ามาบันทึกที่ช่องแก้ไขบิลเก่า
+      window.selectItemFromPicker = function(id, name, unit, stock) {
+        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
+        if (currentActiveEditRow) {
+          currentActiveEditRow.querySelector('.edit-iId').value = id;
+          currentActiveEditRow.querySelector('.edit-iName').value = name;
+          currentActiveEditRow.querySelector('.edit-iUnit').innerText = unit || 'ชิ้น';
+          currentActiveEditRow.querySelector('.edit-iQty').max = stock;
+          currentActiveEditRow.querySelector('.edit-iQty').focus();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
+      };
 
-    function confirmReturnFromDash(btn) {
-      if (!selectedDashItem) return;
-      const selectedIndexes = Array.from(document.querySelectorAll('.dash-item-cb:checked')).map(cb => parseInt(cb.value));
-      if (selectedIndexes.length === 0) { return alert("⚠️ กรุณาเลือกรายการที่ต้องการส่งคืน"); }
+      renderPickerList(currentInventoryData);
+      new bootstrap.Modal(document.getElementById('inventoryPickerModal')).show();
+    }
+
+    // ➕ ฟังก์ชันเพิ่มแถวพัสดุใหม่ในหน้าต่างแก้ไข (พร้อมปุ่มถังขยะลบแถวสะดวกรวดเร็ว)
+    function addEditItemRow(existingId = '', existingName = '', existingQty = '', existingUnit = 'หน่วย') {
+      const container = document.getElementById('edit-items-container');
+      const div = document.createElement('div');
+      div.className = 'edit-item-row border p-2.5 rounded-3 mb-2 bg-white position-relative shadow-sm';
+      div.innerHTML = `
+        <div class="row g-2 align-items-center">
+          <div class="col-4 col-md-3">
+            <label class="small fw-bold text-muted" style="font-size:10px">รหัสพัสดุ</label>
+            <input type="text" class="form-control form-control-sm edit-iId bg-white" value="${existingId}" onclick="openEditPicker(this)" readonly placeholder="เลือก...">
+          </div>
+          <div class="col-5 col-md-5">
+            <label class="small fw-bold text-muted" style="font-size:10px">ชื่อพัสดุ</label>
+            <input type="text" class="form-control form-control-sm edit-iName bg-white" value="${existingName}" onclick="openEditPicker(this)" readonly placeholder="เลือก...">
+          </div>
+          <div class="col-3 col-md-3">
+            <label class="small fw-bold text-muted" style="font-size:10px">จำนวน</label>
+            <div class="input-group input-group-sm">
+              <input type="number" class="form-control edit-iQty" value="${existingQty}" min="1" required>
+              <span class="input-group-text edit-iUnit" style="font-size:10px">${existingUnit}</span>
+            </div>
+          </div>
+          <div class="col-12 col-md-1 text-end mt-2 mt-md-0">
+            <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="this.closest('.edit-item-row').remove()" title="ลบรายการนี้ออก">
+              <i class="bi bi-trash3-fill fs-6"></i>
+            </button>
+          </div>
+        </div>`;
+      container.appendChild(div);
+    }
+
+    // 📝 ✨ [ปรับปรุงใหญ่คำสั่งปุ่มดินสอ] โหลดทั้งข้อมูลหัวบิล และวนลูปสร้างรายการพัสดุเดิมทั้งหมดขึ้นมาให้แก้ไข
+    function editDashboardRow(group) {
+      document.getElementById('editTsKey').value = group.tsKey;
+      document.getElementById('editEmpId').value = group.empId;
+      document.getElementById('editUserName').value = group.userName;
+      document.getElementById('editDept').value = group.dept || "-";
+      document.getElementById('editRegion').value = group.region || "ภาคใต้";
+      document.getElementById('editArea').value = group.area || "เขต 1";
+      document.getElementById('editDate').value = group.date;
+
+      // ล้างแถวรายการพัสดุในหน้ากากเดิมออกก่อน
+      document.getElementById('edit-items-container').innerHTML = '';
+
+      // วนลูปนำรายการพัสดุทั้งหมดที่มีอยู่ในบิลนี้มากางเปิดสร้างแถวให้เลือกแก้ไขหรือกดลบ
+      if (group.items && group.items.length > 0) {
+        group.items.forEach(it => {
+          addEditItemRow(it.itemId, it.itemName, it.itemQty, it.itemUnit);
+        });
+      } else {
+        addEditItemRow();
+      }
+
+      // เปิดสิทธิ์ฉายหน้ากากฟอร์มแก้ไขพรีเมียม
+      new bootstrap.Modal(document.getElementById('editDashboardModal')).show();
+    }
+
+    // รวบรวมส่งชุดข้อมูลโพสต์ (POST) อัปเดตรายการพัสดุแบบยกบิล
+    document.getElementById('editDashboardForm').onsubmit = function(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังดำเนินการ...';
       
-      const selectedItems = selectedIndexes.map(idx => selectedDashItem.items[idx]);
+      const updatedItems = [];
+      const itemRows = document.querySelectorAll('.edit-item-row');
       
-      const payloadData = { 
-        action: "updateStatusToReturning", 
+      if (itemRows.length === 0) {
+        return alert("⚠️ บิลคำขอต้องมีรายการพัสดุอย่างน้อย 1 รายการครับ (หากต้องการยกเลิกทั้งบิลกรุณาใช้ปุ่มถังขยะสีแดงที่หน้า Dashboard)");
+      }
+
+      // กวาดเอาข้อมูลพัสดุชุดล่าสุดที่ตรวจแก้แล้วใส่ Array
+      itemRows.forEach(row => {
+        const id = row.querySelector('.edit-iId').value;
+        const name = row.querySelector('.edit-iName').value;
+        const qty = row.querySelector('.edit-iQty').value;
+        const unit = row.querySelector('.edit-iUnit').innerText;
+        if (id && name && qty) {
+          updatedItems.push({ itemId: id, itemName: name, itemQty: qty, itemUnit: unit });
+        }
+      });
+
+      if (updatedItems.length === 0) return alert("กรุณาระบุข้อมูลพัสดุในแถวให้ครบถ้วน");
+
+      btn.disabled = true; 
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังประมวลผลอัปเดตยกบิล...';
+
+      const payloadData = {
+        action: "editBorrowBatchHeader",
         payload: {
-          tsKey: selectedDashItem.tsKey || (selectedDashItem.rows && selectedDashItem.rows[0] ? selectedDashItem.rows[0].toString() : ""),
-          empId: selectedDashItem.empId,
-          userName: selectedDashItem.userName,
-          dept: selectedDashItem.dept,
-          region: selectedDashItem.region,
-          area: selectedDashItem.area,
-          borrowDate: selectedDashItem.date,
-          items: selectedItems
+          tsKey: document.getElementById('editTsKey').value,
+          empId: document.getElementById('editEmpId').value,
+          userName: document.getElementById('editUserName').value,
+          dept: document.getElementById('editDept').value,
+          region: document.getElementById('editRegion').value,
+          area: document.getElementById('editArea').value,
+          date: document.getElementById('editDate').value,
+          items: updatedItems // ✨ ส่งรายการพัสดุชุดที่จัดสรรใหม่ไปสับเปลี่ยนหลังบ้าน
         }
       };
 
@@ -953,359 +1115,191 @@
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            bootstrap.Modal.getInstance(document.getElementById('dashReturnModal')).hide();
-            alert("✅ ส่งรายการพัสดุไปยังหน้า 'คืนพัสดุ' เรียบร้อยแล้ว");
-            updateDashboardStats(); 
-            loadDashboardList('completed'); 
-            updateNavBadges();
-          } else { alert("Error API: " + res.error); }
+            bootstrap.Modal.getInstance(document.getElementById('editDashboardModal')).hide();
+            alert(res.result || "✅ อัปเดตโครงสร้างบิลและรายการพัสดุเรียบร้อย!");
+            
+            // 🚨 รีเซ็ตคืนสิทธิ์ระบบเชื่อมต่อให้กล่อง Picker ขอยืมแบบปกติทำงานต่อเนื่องได้ทันที
+            if (typeof resetNormalPickerBridge === "function") resetNormalPickerBridge();
+            
+            refreshData();
+          } else {
+            alert("❌ Error: " + res.error);
+          }
           btn.disabled = false; btn.innerHTML = originalText;
-        }).catch(err => { alert("Error: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
+        })
+        .catch(err => {
+          alert("❌ Connection Error: " + err.message);
+          btn.disabled = false; btn.innerHTML = originalText;
+        });
+    };
+
+    // 🚨 ฟังก์ชันเชื่อมสะพานป้องกันตัวแปรค้างสิทธิ์หลังปิดกล่องแก้ไข
+    function resetNormalPickerBridge() {
+      window.selectItemFromPicker = function(id, name, unit, stock) {
+        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
+        if (activeRowElement) {
+          activeRowElement.querySelector('.iId').value = id;
+          activeRowElement.querySelector('.iName').value = name;
+          activeRowElement.querySelector('.iUnit').innerText = unit || 'หน่วย';
+          activeRowElement.querySelector('.iQty').max = stock;
+          activeRowElement.querySelector('.iQty').placeholder = "สูงสุด " + stock;
+          activeRowElement.querySelector('.iQty').focus();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
+      };
     }
 
-    function loadPendingList() {
-      const list = document.getElementById('approval-list');
-      list.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังโหลดรายการรออนุมัติ...</div>';
+    function cancelDashboardRow(tsKey, empId) {
+      document.getElementById('cancelTsKey').value = tsKey;
+      document.getElementById('cancelEmpId').value = empId;
+      document.getElementById('cancelReasonInput').value = '';
+      new bootstrap.Modal(document.getElementById('cancelReasonModal')).show();
+    }
+
+    function submitCancelOrder(btn) {
+      const tsKey = document.getElementById('cancelTsKey').value;
+      const empId = document.getElementById('cancelEmpId').value;
+      const reason = document.getElementById('cancelReasonInput').value.trim();
+      if(!reason) return alert("⚠️ กรุณาระบุเหตุผลการยกเลิกบิลก่อนดำเนินการต่อครับ");
+
+      const originalText = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังประมวลผลยกเลิก...';
+
+      const payloadData = {
+        action: "cancelBorrowBatch",
+        payload: { tsKey: tsKey, empId: empId, reason: reason }
+      };
+
+      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
+        .then(res => res.json())
+        .then(res => {
+          bootstrap.Modal.getInstance(document.getElementById('cancelReasonModal')).hide();
+          alert(res.result || "✅ ทำรายการยกเลิกสำเร็จ");
+          refreshData();
+          btn.disabled = false; btn.innerHTML = originalText;
+        }).catch(err => { alert("Error connecting: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
+    }
+
+    // 📦 🔄 ฟังก์ชันวาดการ์ดตรวจรับคืนพัสดุฉบับปรับปรุงตามบรีฟรูปภาพ (ดึงวันที่ยืม + ปรับดีไซน์ตามตัวอย่าง)
+    function loadReturnList() {
+      const container = document.getElementById('return-selector-list');
+      container.innerHTML = '<div class="text-center p-4 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังดึงรายชื่อบิลพัสดุที่รอส่งคืน...</div>';
       
-      fetch(`${GAS_URL}?action=getPendingApprovals`)
-        .then(res => { if(!res.ok) throw new Error('ไม่สามารถเชื่อมต่อ API ได้'); return res.json(); })
-        .then(items => {
-          if (!items || items.length === 0) { list.innerHTML = '<div class="p-4 text-center text-muted">ไม่มีรายการรออนุมัติ</div>'; return; }
-          window.tempItems = items;
+      fetch(`${GAS_URL}?action=getItemsToReturn`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data || data.length === 0) {
+            container.innerHTML = '<div class="text-center p-5 text-muted small bg-white border rounded-4 shadow-sm">🎉 คลังพัสดุเป็นระเบียบเรียบร้อย (ไม่มีรายการค้างรับคืน)</div>';
+            return;
+          }
           
-          let html = '<div class="row g-3">'; 
-          html += items.map((item, index) => {
-            
-            const createStampHTML = (appr, label) => {
-              if (!appr || !appr.name || appr.name === "-") {
-                return `
-                  <div class="stamp-box text-center opacity-25" style="padding: 5px;">
-                    <span class="stamp-label fw-bold d-block text-secondary" style="font-size: 0.65rem;">${label}</span>
-                    <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1" style="width: 65px; height: 80px; margin: 0 auto; background: #eef2f7; position: relative;"></div>
-                    <span class="stamp-name text-muted d-block fw-normal" style="font-size: 0.7rem;">-</span>
-                  </div>`;
-              }
-              
-              let fDate = "-";
-              if (appr.date) {
-                const dObj = new Date(appr.date);
-                if (!isNaN(dObj.getTime())) {
-                  fDate = dObj.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                } else { fDate = appr.date; }
-              }
-              
-              const getDirectLink = (urlStr) => {
-                if (urlStr === null || urlStr === undefined) return "";
-                urlStr = String(urlStr).trim();
-                if (urlStr === "" || urlStr === "-") return "";
-                if (urlStr.indexOf("data:image") > -1) return urlStr;
-                
-                let cleanUrl = urlStr;
-                if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
-                  let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
-                  if (matchUrl) cleanUrl = matchUrl[0];
-                  else return "";
-                }
-
-                let fileId = "";
-                let matchesId = cleanUrl.match(/id=([^&"'\s)]+)/);
-                if (matchesId && matchesId[1]) { 
-                  fileId = matchesId[1]; 
-                } else {
-                  let parts = cleanUrl.split('/');
-                  let dIndex = parts.indexOf('d');
-                  if (dIndex !== -1 && parts[dIndex + 1]) { 
-                    fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0]; 
-                  }
-                }
-                return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
-              };
-
-              let validPhoto = getDirectLink(appr.photo);
-              
-              let validSig = "";
-              let renderSigHTML = "";
-              
-              if (label === "หัวหน้าแผนก") {
-                validSig = "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300";
-                renderSigHTML = `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
-              } else {
-                validSig = getDirectLink(appr.sig);
-                if (validSig && validSig !== "") {
-                  renderSigHTML = `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
-                } else {
-                  renderSigHTML = `<div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #000; font-family: monospace; font-size: 8px; font-weight: normal; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #000; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
-                }
-              }
-
-              let renderPhotoHTML = (validPhoto.indexOf("<img") > -1) ? validPhoto : `<img src="${validPhoto}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://f1f5f9';">`;
-
-              return `
-                <div class="stamp-box text-center" style="padding: 5px; position: relative;">
-                  <span class="stamp-label fw-bold d-block text-primary" style="font-size: 0.65rem;">${label}</span>
-                  
-                  <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
-                    ${validPhoto ? renderPhotoHTML : `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:9px;" class="text-muted">No Pic</div>`}
-                  </div>
-                  
-                  <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black !important; margin-top: 25px !important;">
-                    ${renderSigHTML}
-                    <span class="stamp-name d-block text-dark fw-normal truncate" style="font-size: 0.72rem; max-width: 85px; margin: 1px auto 0 auto; position: relative; z-index: 2;">(${appr.name})</span>
-                  </div>
-                  
-                  <span class="stamp-date d-block text-danger fw-normal" style="font-size: 0.62rem; margin-top: 1px;">📅 ${fDate}</span>
-                </div>`;
-            };
+          container.innerHTML = data.map(group => {
+            let itemLines = group.items.map((it, idx) => `
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: #f1f5f9 !important; font-size: 0.85rem;">
+                <span class="text-secondary"><b>${idx + 1}.</b> ${it.itemName} <span class="text-muted">(รหัส: ${it.itemId})</span></span>
+                <span class="text-primary fw-bold">${it.itemQty} <span class="text-primary">${it.itemUnit || 'ชิ้น'}</span></span>
+              </div>
+            `).join('');
 
             return `
-              <div class="col-12 col-md-6 col-lg-4">
-                <div class="item-card shadow-sm p-3 h-100 bg-white rounded-4" onclick="openModalByIndex(${index})" style="cursor:pointer; border-left: 5px solid #ffc107;">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="small"><b class="text-dark"><i class="bi bi-person-fill text-primary"></i> ${item.userName}</b> <span class="ms-1 text-muted" style="font-size: 0.72rem;">ID: ${item.empId}</span></div>
-                    <div class="small text-end"><span class="badge bg-warning text-dark px-2 rounded-pill" style="font-size: 0.65rem;">${item.status}</span></div>
+              <div class="list-group-item bg-white p-4 border-0 shadow-sm rounded-4 mb-3 animate-fade-in" style="border-left: 5px solid #00d2ff !important; border-top: 1px solid #f1f5f9 !important; border-right: 1px solid #f1f5f9 !important; border-bottom: 1px solid #f1f5f9 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                  <div>
+                    <h6 class="fw-bold text-dark mb-1.5" style="font-size: 0.95rem;">
+                      <i class="bi bi-person-circle text-primary me-1"></i> ${group.userName} <span class="text-muted fw-normal" style="font-size: 0.82rem;">(ID: ${group.empId})</span>
+                    </h6>
+                    <div class="small text-secondary d-flex flex-wrap gap-2 align-items-center" style="font-size: 0.8rem;">
+                      <span>🏢 สังกัด: <b>${group.dept}</b></span> |
+                      <span>🗺️ ภาค: <b>${group.region}</b></span> |
+                      <span>📍 เขต: <b>${group.area}</b></span>
+                    </div>
                   </div>
-                  
-                  <div class="d-flex flex-wrap align-items-center gap-2 small text-muted mb-2 border-bottom pb-1.5" style="font-size: 0.76rem;">
-                    <div>🏢 <b>สังกัด:</b> ${item.dept || '-'}</div>
-                    <div class="text-secondary opacity-50">|</div>
-                    <div>🗺️ <b>ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
-                    <div class="text-secondary opacity-50">|</div>
-                    <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
-                    <div class="ms-auto text-end" style="font-size: 0.7rem;">📅 <b>วันที่ยืม:</b> ${item.date}</div>
+                  <div class="text-end small" style="font-size: 0.78rem;">
+                    <div class="text-secondary mb-1"><i class="bi bi-calendar-event text-primary me-1"></i> วันที่ยืม: <span class="fw-bold">${group.borrowDate || '-'}</span></div>
+                    <div class="text-danger"><i class="bi bi-clock-history me-1"></i> แจ้งคืนเมื่อ: <span class="fw-bold">${group.date}</span></div>
                   </div>
-                  
-                  <div class="small fw-bold text-primary mb-1">รายการพัสดุที่ต้องการยืม</div>
-                  <div class="bg-light rounded-3 p-2 mb-2">
-                    ${item.items.map((p, i) => `
-                      <div class="small mb-1 border-bottom border-white pb-1">
-                        <div class="text-dark"><b>${i + 1}.</b> ${p.itemName}</div>
-                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.68rem; padding-left: 15px;"><span>รหัสพัสดุ: ${p.itemId}</span><span>จำนวน: <b class="text-primary">${p.itemQty}</b> ${p.itemUnit}</span></div>
-                      </div>`).join('')}
+                </div>
+                
+                <div class="mb-3">
+                  <div class="text-info small fw-bold mb-2" style="font-size: 0.85rem;"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่แจ้งส่งคืน</div>
+                  <div class="bg-light p-3 rounded-3 border border-light">
+                    ${itemLines}
                   </div>
-
-                  <div class="approval-stamp-container d-flex justify-content-between border-top pt-2 mt-2" style="border-color: #e2e8f0 !important;">
-                    ${createStampHTML(item.appr1, "หัวหน้าแผนก")}
-                    ${createStampHTML(item.appr2, "ผู้จัดการ")}
-                    ${createStampHTML(item.appr3, "พัสดุ")}
-                  </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                  <button class="btn btn-link text-decoration-none fw-bold text-primary p-0 bg-transparent border-0 small" style="font-size: 0.85rem; letter-spacing: 0.3px;" onclick='openProcessReturnModal(${JSON.stringify(group)})'>
+                    <i class="bi bi-camera-fill me-1"></i> คลิกเพื่อเปิดกล้องเว็บแคมและเซ็นรับคืนพัสดุ >
+                  </button>
                 </div>
               </div>`;
           }).join('');
-          list.innerHTML = html + '</div>';
         })
-        .catch(err => {
-          console.error(err);
-          list.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถดึงรายการอนุมัติได้: ${err.message}</div>`;
-        });
+        .catch(err => { console.error(err); container.innerHTML = '<div class="p-3 text-center text-danger">ดึงข้อมูลไม่สำเร็จ</div>'; });
     }
 
-    async function openModalByIndex(index) {
-      currentItem = window.tempItems[index];
-      console.log("ข้อมูลผู้อนุมัติปัจจุบัน:", currentItem);
+    function openProcessReturnModal(group) {
+      currentItem = group;
+      document.getElementById('retRow').value = group.tsKey;
+      document.getElementById('retDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('retReceiver').value = '';
       
-      const getDirectLink = (urlStr) => {
-        if (urlStr === null || urlStr === undefined) return "";
-        urlStr = String(urlStr).trim();
-        if (urlStr === "" || urlStr === "-") return "";
-        if (urlStr.indexOf("data:image") > -1) return urlStr;
-        
-        let cleanUrl = urlStr;
-        if (urlStr.indexOf("=") === 0 || urlStr.indexOf("http") === -1) {
-          let matchUrl = urlStr.match(/https:\/\/drive\.google\.com\/[^"'\s)]+/);
-          if (matchUrl) cleanUrl = matchUrl[0];
-          else return "";
-        }
+      const checklist = document.getElementById('checkable-return-list');
+      checklist.innerHTML = group.items.map((it, idx) => `
+        <label class="list-group-item d-flex gap-2 border-0 border-bottom py-2.5">
+          <input class="form-check-input flex-shrink-0" type="checkbox" checked value="${it.itemId}" data-name="${it.itemName}" data-qty="${it.itemQty}" data-unit="${it.itemUnit}">
+          <span class="text-dark small"><b>${idx+1}.</b> ${it.itemName} (${it.itemQty} ${it.itemUnit})</span>
+        </label>
+      `).join('');
+      
+      let returnModalNode = new bootstrap.Modal(document.getElementById('returnModal'));
+      returnModalNode.show();
+      
+      setTimeout(() => {
+        const canvas = document.getElementById('pad-return');
+        if(canvas) { resizeCanvas(canvas); spReturn.clear(); }
+        initReturnCamera();
+      }, 400);
+    }
 
-        let fileId = "";
-        let matchesId = cleanUrl.match(/id=([^&"'\s)]+)/);
-        if (matchesId && matchesId[1]) { 
-          fileId = matchesId[1]; 
-        } else {
-          let parts = cleanUrl.split('/');
-          let dIndex = parts.indexOf('d');
-          if (dIndex !== -1 && parts[dIndex + 1]) { 
-            fileId = parts[dIndex + 1].split(/[?&"'\s)]/)[0]; 
-          }
+    document.getElementById('returnForm').onsubmit = function(e) {
+      e.preventDefault();
+      if (spReturn.isEmpty()) return alert("⚠️ เจ้าหน้าที่พัสดุกรุณาเซ็นชื่อรับรองการรับคืนพัสดุก่อนครับ");
+      if (!returnPhotoBase64) return alert("⚠️ กรุณากดปุ่มถ่ายรูปใบหน้าเพื่อยืนยันการรับคืนสินค้า (Face Verification)");
+      
+      const checkedBoxes = document.querySelectorAll('#checkable-return-list input:checked');
+      if(checkedBoxes.length === 0) return alert("⚠️ กรุณาติ๊กเลือกพัสดุที่ตรวจสอบรับเข้าคืนอย่างน้อย 1 ชิ้น");
+      
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.innerText = "กำลังรับพัสดุเข้าคลัง...";
+      
+      const rItems = [];
+      checkedBoxes.forEach(cb => {
+        rItems.push({ itemId: cb.value, itemName: cb.getAttribute('data-name'), itemQty: cb.getAttribute('data-qty'), itemUnit: cb.getAttribute('data-unit') });
+      });
+
+      const payloadData = {
+        action: "processReturn",
+        payload: {
+          tsKey: document.getElementById('retRow').value, empId: currentItem.empId,
+          retReceiver: document.getElementById('retReceiver').value, retDate: document.getElementById('retDate').value,
+          sig: spReturn.toDataURL(), retFacePhoto: returnPhotoBase64, items: rItems
         }
-        return fileId && fileId.length >= 25 ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w300" : cleanUrl;
       };
 
-      const renderModalPhotoSafe = (rawStr) => {
-        if (!rawStr || rawStr === "-" || rawStr.indexOf("ไม่ได้แนบ") > -1 || rawStr.indexOf("กล้องขัดข้อง") > -1) {
-          return `<div style="width:100%; height:100%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px;" class="text-muted">No Pic</div>`;
-        }
-        let finalImgUrl = getDirectLink(rawStr);
-        return `<img src="${finalImgUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
-      };
-
-      const renderModalSigSafe = (sigStr, isLevel1) => {
-        let validSig = isLevel1 ? "https://drive.google.com/thumbnail?id=1wMbvsg1ZErfnU2n7n7vpabLsO45XZxt6&sz=w300" : getDirectLink(sigStr);
-        if (!validSig || validSig === "") {
-          return `<div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-4deg); color: #000; font-family: monospace; font-size: 8px; font-weight: normal; background: rgba(255,255,255,0.9); padding: 1px 5px; border: 1px dashed #000; border-radius: 3px; white-space: nowrap; z-index: 10;">SIGNED ✅</div>`;
-        }
-        return `<img src="${validSig}" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 75px; height: 35px; object-fit: contain; pointer-events: none; filter: drop-shadow(1px 1px 1px white); z-index: 10;">`;
-      };
-
-      let infoHtml = `
-        <div class="approval-info-box shadow-sm mb-3">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <div class="small"><b class="text-dark"><i class="bi bi-person-fill text-primary"></i> ${currentItem.userName}</b> <span class="ms-1 text-muted" style="font-size: 0.7rem;">ID: ${currentItem.empId}</span></div>
-          </div>
-          <div class="d-flex justify-content-between small text-muted mb-2 border-bottom pb-1" style="font-size: 0.75rem;">
-            <div><b>สังกัด:</b> ${currentItem.dept || '-'}</div><div><b>วันที่ยืม:</b> ${currentItem.date}</div>
-          </div>
-          <div class="small fw-bold text-primary mb-1"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่ต้องการอนุมัติ</div>
-          <div class="bg-light rounded-3 p-2 mb-2" style="max-height: 150px; overflow-y: auto; border: 1px dashed #dee2e6;">
-            ${(currentItem.items || []).map((p, i) => `
-              <div class="small mb-1 border-bottom border-white pb-1">
-                <div class="text-dark"><b>${i + 1}.</b> ${p.itemName}</div>
-                <div class="d-flex justify-content-between text-muted" style="font-size: 0.7rem; padding-left: 15px;"><span>รหัสพัสดุ: ${p.itemId}</span><span>จำนวน: <b class="text-primary">${p.itemQty}</b> ${p.itemUnit}</span></div>
-              </div>`).join('')}
-          </div>
-        </div>`;
-
-      infoHtml += `
-        <div class="approval-info-box shadow-sm mb-3 pt-2">
-          <div class="small fw-bold text-purple mb-2" style="color: #a31d8e !important;"><i class="bi bi-shield-check me-1"></i> ประวัติและสถานะการอนุมัติในบิลนี้</div>
-          <div class="row g-2 text-center justify-content-center">
-            
-            <div class="col-4 border-end ${(!currentItem.appr1 || !currentItem.appr1.name || currentItem.appr1.name === "-") ? 'opacity-25' : ''}">
-              <span class="d-block text-muted" style="font-size:0.65rem;"><b>หัวหน้าแผนก</b></span>
-              <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
-                ${renderModalPhotoSafe(currentItem.appr1?.photo)}
-              </div>
-              <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black; margin-top: 25px !important;">
-                ${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? renderModalSigSafe(currentItem.appr1?.sig, true) : ''}
-                <b class="d-block text-dark fw-normal truncate" style="font-size:0.7rem; max-width:85px; margin:1px auto 0 auto;">(${currentItem.appr1?.name && currentItem.appr1.name !== "-" ? currentItem.appr1.name : "รออนุมัติ"})</b>
-              </div>
-            </div>
-
-            <div class="col-4 border-end ${(!currentItem.appr2 || !currentItem.appr2.name || currentItem.appr2.name === "-") ? 'opacity-25' : ''}">
-              <span class="d-block text-muted" style="font-size:0.65rem;"><b>ผู้จัดการ</b></span>
-              <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
-                ${renderModalPhotoSafe(currentItem.appr2?.photo)}
-              </div>
-              <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black; margin-top: 25px !important;">
-                ${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? renderModalSigSafe(currentItem.appr2?.sig, false) : ''}
-                <b class="d-block text-dark fw-normal truncate" style="font-size:0.7rem; max-width:85px; margin:1px auto 0 auto;">(${currentItem.appr2?.name && currentItem.appr2.name !== "-" ? currentItem.appr2.name : "รออนุมัติ"})</b>
-              </div>
-            </div>
-
-            <div class="col-4 ${(!currentItem.appr3 || !currentItem.appr3.name || currentItem.appr3.name === "-") ? 'opacity-25' : ''}">
-              <span class="d-block text-muted" style="font-size:0.65rem;"><b>ผู้ควบคุมพัสดุ</b></span>
-              <div class="stamp-photo-wrapper shadow-sm border rounded-3 my-1 position-relative overflow-hidden" style="width: 65px; height: 80px; margin: 0 auto; background: #fff;">
-                ${renderModalPhotoSafe(currentItem.appr3?.photo)}
-              </div>
-              <div class="position-relative mt-4 pt-1" style="border-top: 1px solid black; margin-top: 25px !important;">
-                ${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? renderModalSigSafe(currentItem.appr3?.sig, false) : ''}
-                <b class="d-block text-dark fw-normal truncate" style="font-size:0.7rem; max-width:85px; margin:1px auto 0 auto;">(${currentItem.appr3?.name && currentItem.appr3.name !== "-" ? currentItem.appr3.name : "รออนุมัติ"})</b>
-              </div>
-            </div>
-
-          </div>
-        </div>`;
-
-      document.getElementById('modalItemInfoNew').innerHTML = infoHtml;
-      
-      ['step1', 'step2', 'step3'].forEach(id => { const el = document.getElementById('card-' + id); if (el) el.style.display = 'none'; });
-      if (currentItem.status === "รอหัวหน้าแผนก") { document.getElementById('card-step1').style.display = 'block'; }
-      else if (currentItem.status === "รอผู้จัดการ") { document.getElementById('card-step2').style.display = 'block'; }
-      else if (currentItem.status === "รอผู้ควบคุมพัสดุ") { document.getElementById('card-step3').style.display = 'block'; }
-      
-      if (["รอหัวหน้าแผนก", "รอผู้จัดการ", "รอผู้ควบคุมพัสดุ"].includes(currentItem.status)) {
-         [sp1, sp2, sp3].forEach(p => p && p.clear());
-         retakeSnapshot(); 
-         currentFacingMode = "user"; 
-         await initCamera(currentFacingMode);
-      }
-
-      new bootstrap.Modal(document.getElementById('approveModal')).show();
-      setTimeout(() => { [sp1, sp2, sp3].forEach(p => p && p.canvas && resizeCanvas(p.canvas)); }, 500);
-    }
-
-    function loadReturnList() {
-      const listDiv = document.getElementById('return-selector-list');
-      listDiv.innerHTML = '<div class="text-center p-4 small text-muted"><div class="spinner-border text-info spinner-border-sm me-2"></div>กำลังโหลดรายการค้างคืน...</div>';
-      
-      fetch(`${GAS_URL}?action=getItemsToReturn`)
-        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
-        .then(items => {
-          if (!items || items.length === 0) { 
-            listDiv.innerHTML = '<div class="p-4 text-center text-muted bg-white rounded-4 shadow-sm border">🎉 ไม่มีพัสดุค้างคืนในระบบ</div>'; 
-            return; 
-          }
-          
-          listDiv.innerHTML = items.map(item => `
-            <div class="item-card shadow-sm p-3 mb-3 bg-white rounded-4 animate-fade-in" onclick='selectItemToReturn(${JSON.stringify(item)})' style="cursor:pointer; border-left: 5px solid #0dcaf0;">
-              <div class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2">
-                <div>
-                  <b class="text-dark"><i class="bi bi-person-circle text-primary me-1"></i> ${item.userName}</b> <span class="small text-muted">(ID: ${item.empId})</span>
-                  <div class="d-flex flex-wrap gap-2 small text-muted mt-1" style="font-size: 0.78rem;">
-                    <div>🏢 <b>สังกัด:</b> ${item.dept || '-'}</div>
-                    <div class="text-secondary opacity-50">|</div>
-                    <div>🗺️ <b>ภาค:</b> <span class="text-dark fw-bold">${item.region || '-'}</span></div>
-                    <div class="text-secondary opacity-50">|</div>
-                    <div>📍 <b>เขต:</b> <span class="text-dark fw-bold">${item.area || '-'}</span></div>
-                  </div>
-                </div>
-                <div class="text-end" style="min-width: 150px;">
-                  <div class="small text-muted" style="font-size: 0.7rem;">📅 วันที่ยืม: ${item.borrowDate || '-'}</div>
-                  <div class="small text-danger fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-clock-history"></i> แจ้งคืนเมื่อ: ${item.date}</div>
-                </div>
-              </div>
-              
-              <div class="small fw-bold text-info mb-1"><i class="bi bi-box-seam me-1"></i> รายการพัสดุที่แจ้งส่งคืน</div>
-              <div class="bg-light rounded-3 p-2 mb-2">
-                ${(item.items || []).map((p, i) => `
-                  <div class="d-flex justify-content-between small text-secondary border-bottom border-white pb-1 mb-1" style="border-color: #edf2f7 !important;">
-                    <span><b>${i + 1}.</b> ${p.itemName} (รหัส: ${p.itemId})</span>
-                    <span class="text-primary fw-bold">${p.itemQty} ${p.itemUnit}</span>
-                  </div>`).join('')}
-              </div>
-              
-              ${item.receiverName ? `
-                <div class="mt-2 p-2 rounded-3 border" style="background-color: #f0faff; border-style: dashed !important;">
-                   <div class="row g-0 small" style="font-size: 0.7rem;">
-                      <div class="col-4"><b>ผู้รับคืน:</b><br>${item.receiverName}</div>
-                      <div class="col-4 text-center"><b>ตำแหน่ง:</b><br>${item.receiverPos || 'เจ้าหน้าที่'}</div>
-                      <div class="col-4 text-end text-danger"><b>วันที่รับจริง:</b><br><b>${item.date}</b></div>
-                   </div>
-                </div>` : `
-                <div class="text-center mt-2 small text-primary fw-bold"><i class="bi bi-camera-fill me-1"></i> คลิกเพื่อเปิดกล้องเว็บแคมและเซ็นรับคืนพัสดุ ></div>`}
-            </div>`).join('');
-        }).catch(err => {
-          console.error("Error return list:", err);
-          listDiv.innerHTML = `<div class="p-4 text-center text-danger small">❌ ไม่สามารถโหลดรายการค้างคืนได้: ${err.message}</div>`;
-        });
-    }
-
-    function updateNavBadges() {
-      fetch(`${GAS_URL}?action=getPendingApprovals`)
-        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
-        .then(statsList => {
-          const approveBadge = document.getElementById('nav-badge-approve');
-          if (approveBadge) {
-            if (statsList && statsList.length > 0) { approveBadge.innerText = statsList.length; approveBadge.style.display = 'flex'; }
-            else { approveBadge.style.display = 'none'; }
-          }
-          updateReturnBadge();
-        }).catch(err => console.error("Error nav approve badges:", err));
-    }
-
-    function updateReturnBadge() {
-      fetch(`${GAS_URL}?action=getItemsToReturn`)
-        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
-        .then(items => {
-          const returnBadge = document.getElementById('nav-badge-return');
-          if (returnBadge) {
-            if (items && items.length > 0) { 
-              returnBadge.innerText = items.length; 
-              returnBadge.style.display = 'flex'; 
-            }
-            else { returnBadge.style.display = 'none'; }
-          }
-        }).catch(err => console.error("Error nav return badges:", err));
-    }
+      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            alert("✅ บันทึกตรวจสอบและรับคืนของพัสดุกลับเข้าคลังเรียบร้อยครับ!");
+            stopReturnWebcam();
+            bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
+            refreshData();
+          } else { alert("เกิดข้อผิดพลาด: " + res.error); }
+          btn.disabled = false; btn.innerText = "บันทึกการรับคืนพัสดุ";
+        })
+        .catch(err => { alert(err.message); btn.disabled = false; btn.innerText = "บันทึกการรับคืนพัสดุ"; });
+    };
 
     function createApprovalHistoryHtml(approvals) { 
       if (!approvals) return ''; 
@@ -1328,7 +1322,7 @@
     window.onload = () => { 
       fetch(`${GAS_URL}?action=getInventoryList`)
         .then(res => res.json())
-        .then(data => { currentInventoryData = data; addItemRow(); })
+        .then(data => { currentInventoryData = data; addItemRow(); resetNormalPickerBridge(); })
         .catch(err => console.error("Error initialization:", err));
 
       showPage('page-dashboard', document.querySelector('.nav-item-side')); 
@@ -1438,14 +1432,12 @@
       if (btnRetake) btnRetake.style.display = 'none';
     }
 
-    // 📸 --- ระบบควบคุมเลนส์กล้องหน้า-หลัง สำหรับส่วนรับคืนพัสดุ ---
     async function initReturnCamera() {
       const video = document.getElementById('retWebcam');
       returnPhotoBase64 = null;
       document.getElementById('ret-snapshot-overlay').style.display = 'none';
       if (video) video.style.display = 'block';
       
-      // ล้างหน่วยความจำเลนส์เดิมก่อนสั่งสลับอุปกรณ์
       if (returnWebcamStream) {
         returnWebcamStream.getTracks().forEach(track => track.stop());
         returnWebcamStream = null;
@@ -1471,7 +1463,6 @@
     }
 
     async function switchReturnCamera() {
-      // สลับจากสิทธิ์กล้องหน้า (user) ไปกล้องหลัง (environment) สลับไปมา
       returnFacingMode = (returnFacingMode === "user") ? "environment" : "user";
       await initReturnCamera();
     }
