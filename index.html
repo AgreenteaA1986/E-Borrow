@@ -1890,7 +1890,6 @@
       fetch(`${GAS_URL}?action=getAllItemsDashboard`)
         .then(res => res.json())
         .then(items => {
-          // กรองคัดสรรเฉพาะบิลที่มีคำว่า "รอ" อยู่ในสถานะ
           const pendingBills = items.filter(g => g.status.startsWith("รอ"));
           
           if (!pendingBills || pendingBills.length === 0) {
@@ -1904,7 +1903,6 @@
             if (group.status === "รอผู้จัดการ") { currentStep = 2; currentStepName = "ผู้จัดการ"; }
             else if (group.status === "รอผู้ควบคุมพัสดุ") { currentStep = 3; currentStepName = "ผู้ควบคุมพัสดุ"; }
             
-            // แสดงรายการพัสดุพร้อมเลขลำดับรายการ
             let itemLines = group.items.map((it, idx) => `
               <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: #f1f5f9 !important; font-size: 0.85rem;">
                 <span class="text-dark fw-semibold"><b>${idx + 1}.</b> ${it.itemName} <span class="text-muted small">(รหัสพัสดุ: ${it.itemId})</span></span>
@@ -1944,8 +1942,9 @@
                   </div>
                   
                   <div class="col-12 mt-1">
-                    <button class="btn btn-premium-blue w-100 py-2.5 rounded-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="font-size:0.85rem;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
-                      <i class="bi bi-pencil-square fs-5"></i> เซ็นอนุมัติบิลงานใบนี้ (${currentStepName})
+                    <!-- 🎨 เปลี่ยนสีปุ่มเป็นฟ้าสด (#00d2ff) ให้เหมือนหน้าคืนพัสดุตามคำขอ -->
+                    <button class="btn text-white w-100 py-2.5 rounded-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="font-size:0.85rem; background-color: #00d2ff !important; border-color: #00d2ff !important;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
+                      <i class="bi bi-pencil-square fs-5"></i> เซ็นอนุมัติบิลงานใบนี้ (${currentStepName}) >
                     </button>
                   </div>
                 </div>
