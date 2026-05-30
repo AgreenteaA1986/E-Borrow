@@ -1885,36 +1885,69 @@
 
     function loadPendingList() {
       const container = document.getElementById('approval-list');
-      container.innerHTML = 'กำลังโหลด...';
+      container.innerHTML = '<div class="text-center p-4 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังตรวจสอบประวัติใบงานรอพิจารณา...</div>';
+      
       fetch(`${GAS_URL}?action=getAllItemsDashboard`)
         .then(res => res.json())
         .then(items => {
+          // กรองคัดสรรเฉพาะบิลที่มีคำว่า "รอ" อยู่ในสถานะ
           const pendingBills = items.filter(g => g.status.startsWith("รอ"));
-          if (pendingBills.length === 0) { container.innerHTML = 'ไม่พบรายการรออนุมัติ'; return; }
+          
+          if (!pendingBills || pendingBills.length === 0) {
+            container.innerHTML = '<div class="text-center p-5 text-muted small bg-white rounded-4 border shadow-sm">🎉 ยอดเยี่ยม! บิลทุกล็อกผ่านการเซ็นตรวจสอบครบถ้วนเรียบร้อยแล้ว</div>';
+            return;
+          }
           
           container.innerHTML = pendingBills.map(group => {
-            let currentStep = group.status === "รอหัวหน้าแผนก" ? 1 : (group.status === "รอผู้จัดการ" ? 2 : 3);
-            let stepName = group.status.replace("รอ", "");
+            let currentStep = 1;
+            let currentStepName = "หัวหน้าแผนก";
+            if (group.status === "รอผู้จัดการ") { currentStep = 2; currentStepName = "ผู้จัดการ"; }
+            else if (group.status === "รอผู้ควบคุมพัสดุ") { currentStep = 3; currentStepName = "ผู้ควบคุมพัสดุ"; }
+            
+            // แสดงรายการพัสดุพร้อมเลขลำดับรายการ
             let itemLines = group.items.map((it, idx) => `
-              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                <span class="text-dark fw-semibold"><b>${idx + 1}.</b> ${it.itemName} <small class="text-muted">(ID: ${it.itemId})</small></span>
-                <span class="text-primary fw-bold">${it.itemQty} ${it.itemUnit}</span>
-              </div>`).join('');
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: #f1f5f9 !important; font-size: 0.85rem;">
+                <span class="text-dark fw-semibold"><b>${idx + 1}.</b> ${it.itemName} <span class="text-muted small">(รหัสพัสดุ: ${it.itemId})</span></span>
+                <span class="text-primary fw-bold">${it.itemQty} <span class="text-primary">${it.itemUnit || 'ชิ้น'}</span></span>
+              </div>
+            `).join('');
             
             return `
-              <div class="list-group-item bg-white p-4 border shadow-sm rounded-4 mb-3">
-                <div class="d-flex justify-content-between mb-2">
-                  <h6 class="fw-bold text-dark"><i class="bi bi-file-earmark-text text-primary me-1"></i> เลขที่เอกสาร: ${group.tsKey} <span class="badge bg-warning text-dark ms-2">${group.status}</span></h6>
-                  <div class="text-end text-secondary small"><b>วันที่ยืม:</b> ${group.date}</div>
-                </div>
-                <div class="small text-secondary mb-3">
-                  <i class="bi bi-person-fill"></i> ผู้ยืม: <b>${group.userName}</b> | 🏢 สังกัด: ${group.dept} | 📍 ภาค: ${group.region}
-                </div>
-                <div class="bg-light p-3 rounded-4 mb-3">${itemLines}</div>
-                <button class="btn btn-premium-blue w-100 py-2.5 rounded-3 fw-bold" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
-                  <i class="bi bi-pencil-square"></i> เซ็นอนุมัติ (${stepName})
-                </button>
-              </div>`;
+              <div class="list-group-item bg-white p-4 border shadow-sm rounded-4 mb-3 animate-fade-in" style="border-color: #edf2f7 !important;">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                      <div>
+                        <h6 class="fw-bold text-dark mb-1.5">
+                          <i class="bi bi-file-earmark-text text-primary me-1"></i> เลขที่เอกสาร: <span class="font-monospace text-primary fw-bold" style="letter-spacing:0.3px;">${group.tsKey}</span>
+                          <span class="badge bg-warning text-dark ms-2" style="font-size:0.65rem; vertical-align: middle;">${group.status}</span>
+                        </h6>
+                        <div class="small text-secondary fw-semibold" style="font-size: 0.82rem;">
+                          <span><i class="bi bi-person-fill text-muted me-1"></i> ผู้ขอยืม: <b class="text-dark">${group.userName}</b> (ID: ${group.empId})</span>
+                        </div>
+                      </div>
+                      <div class="text-end small text-secondary" style="font-size: 0.78rem;">
+                        <div class="mb-1 fw-bold"><i class="bi bi-calendar-check text-primary me-1"></i> วันที่ยืม: <span class="text-primary">${group.date || '-'}</span></div>
+                      </div>
+                    </div>
+                    
+                    <div class="small text-secondary d-flex flex-wrap gap-2 align-items-center mb-3" style="font-size: 0.8rem;">
+                      <span><i class="bi bi-building text-muted me-1"></i> สังกัด: <b>${group.dept || '-'}</b></span> |
+                      <span><i class="bi bi-geo-alt-fill text-muted me-1"></i> ภาค: <b>${group.region || '-'}</b></span> |
+                      <span><i class="bi bi-geo text-muted me-1"></i> เขต: <b>${group.area || '-'}</b></span>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded-4 border border-light mb-2">
+                      <div class="text-muted small fw-bold mb-1.5"><i class="bi bi-box-seam me-1"></i> รายการพัสดุเบิกยืมในบิลคำขอนี้</div>
+                      ${itemLines}
+                    </div>
+                  </div>
+                  
+                  <div class="col-12 mt-1">
+                    <button class="btn btn-premium-blue w-100 py-2.5 rounded-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="font-size:0.85rem;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
+                      <i class="bi bi-pencil-square fs-5"></i> เซ็นอนุมัติบิลงานใบนี้ (${currentStepName})
+                    </button>
+                  </div>
                 </div>
               </div>`;
           }).join('');
