@@ -1593,116 +1593,95 @@
     }
 
     function loadAnalyticsChartsPanel() {
-      const overdueContainer = document.getElementById('overdue-analytics-container');
-      overdueContainer.innerHTML = '<div class="text-center p-4 text-muted small"><div class="spinner-border text-danger spinner-border-sm me-2"></div>ระบบตรวจจับกำลังวิเคราะห์ประวัติวันค้างส่งพัสดุ...</div>';
+  const overdueContainer = document.getElementById('overdue-analytics-container');
+  overdueContainer.innerHTML = '<div class="text-center p-4 text-muted small"><div class="spinner-border text-danger spinner-border-sm me-2"></div>ระบบกำลังวิเคราะห์ข้อมูล...</div>';
 
-      fetch(`${GAS_URL}?action=getAnalyticsData`)
-        .then(res => res.json())
-        .then(resData => {
-          const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
-          if (barChartInstance) barChartInstance.destroy();
+  fetch(`${GAS_URL}?action=getAnalyticsData`)
+    .then(res => res.json())
+    .then(resData => {
+      const colorPalette = {
+        "ภาคเหนือ": "#4dadf7",
+        "ภาคตะวันออกเฉียงเหนือ": "#ff922b",
+        "ภาคกลาง": "#cc5de8",
+        "ภาคใต้": "#22b8cf",
+        "ไม่ระบุภาค": "#adb5bd"
+      };
 
-          const colorPalette = {
-            "ภาคเหนือ": "#4dadf7",
-            "ภาคตะวันออกเฉียงเหนือ": "#ff922b",
-            "ภาคกลาง": "#cc5de8",
-            "ภาคใต้": "#22b8cf",
-            "ไม่ระบุภาค": "#adb5bd"
-          };
+      // --- กราฟ 1: แสดง % ของแต่ละภาค (กราฟแท่ง) ---
+      const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
+      if (barChartInstance) barChartInstance.destroy();
 
-          const barDatasets = [];
-          Object.keys(resData.monthlyData.datasets).forEach(regionKey => {
-            barDatasets.push({
-              label: regionKey,
-              data: resData.monthlyData.datasets[regionKey],
-              backgroundColor: colorPalette[regionKey] || "#a31d8e",
-              borderRadius: 6
-            });
-          });
+      barChartInstance = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(resData.regionPercentages),
+          datasets: [{
+            label: 'สัดส่วน % การยืมรายภาค',
+            data: Object.values(resData.regionPercentages),
+            backgroundColor: Object.keys(resData.regionPercentages).map(k => colorPalette[k] || "#a31d8e"),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw}%` } } },
+          scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (val) => val + '%' } } }
+        }
+      });
 
-          barChartInstance = new Chart(ctxBar, {
-            type: 'bar',
-            data: { labels: resData.monthlyData.labels, datasets: barDatasets },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Sarabun' } } } },
-              scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-          });
+      // --- กราฟ 2: แสดงจำนวนรายการจริงของแต่ละภาค (กราฟวงกลม) ---
+      const ctxDonut = document.getElementById('regionDonutChart').getContext('2d');
+      if (donutChartInstance) donutChartInstance.destroy();
 
-          const ctxDonut = document.getElementById('regionDonutChart').getContext('2d');
-          if (donutChartInstance) doughnutChartInstance.destroy();
+      donutChartInstance = new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(resData.regionCounts),
+          datasets: [{
+            data: Object.values(resData.regionCounts),
+            backgroundColor: Object.keys(resData.regionCounts).map(k => colorPalette[k] || "#a31d8e")
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { 
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw} รายการ` } } 
+          },
+          cutout: '60%'
+        }
+      });
 
-          const donutLabels = Object.keys(resData.regionShare);
-          const donutCounts = Object.values(resData.regionShare);
-          const donutColors = donutLabels.map(label => colorPalette[label] || "#a31d8e");
+      // --- ส่วนแสดงตาราง Overdue ---
+      if (!resData.overdueList || resData.overdueList.length === 0) {
+        overdueContainer.innerHTML = '<div class="alert alert-success border-0 rounded-3 text-center small mb-0">🎉 ยอดเยี่ยม! ไม่พบรายการพัสดุค้างคืนเกินกำหนด</div>';
+        return;
+      }
 
-          donutChartInstance = new Chart(ctxDonut, {
-            type: 'doughnut',
-            data: {
-              labels: donutLabels,
-              datasets: [{ data: donutCounts, backgroundColor: donutColors, borderStrokeColor: '#fff', borderWidth: 2 }]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Sarabun', size: 11 } } },
-                tooltip: {
-                  callbacks: {
-                    label: function(context) {
-                      let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                      let value = context.raw;
-                      let percentage = ((value / total) * 100).toFixed(1);
-                      return ` ${context.label}: ${value} รายการ (${percentage}%)`;
-                    }
-                  }
-                }
-              },
-              cutout: '60%'
-            }
-          });
-
-          if (!resData.overdueList || resData.overdueList.length === 0) {
-            overdueContainer.innerHTML = '<div class="alert alert-success border-0 rounded-3 text-center small mb-0">🎉 ยอดเยี่ยมมาก! สัปดาห์นี้ไม่มีพัสดุใดที่ยืมค้างคาเกิน 7 วันเลยครับ</div>';
-            return;
-          }
-
-          let tableHtml = `
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0" style="font-size: 0.8rem; white-space: nowrap;">
-                <thead class="table-danger fw-bold text-dark" style="border-bottom: 2px solid #fecaca;">
-                  <tr>
-                    <th class="py-2.5 ps-3">ชื่อผู้ยืม (สังกัด)</th>
-                    <th>ภูมิภาค / เขต</th>
-                    <th>วันที่ยืมพัสดุ</th>
-                    <th>รายการพัสดุค้างส่ง</th>
-                    <th class="pe-3 text-center">รวมเวลาที่เกินกำหนด</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-
-          resData.overdueList.forEach(ov => {
-            let itemBadgeLines = ov.items.map(it => `<span class="badge bg-light text-dark border me-1 my-0.5 fw-normal">📦 ${it.itemName} (${it.itemQty} ${it.itemUnit})</span>`).join(' ');
-            tableHtml += `
-              <tr>
-                <td class="py-2.5 ps-3 fw-bold text-dark">${ov.userName} <br><small class="text-muted fw-normal">ID: ${ov.empId} | แผนก: ${ov.dept}</small></td>
-                <td class="text-dark">${ov.region} <span class="text-secondary small">(${ov.area})</span></td>
-                <td class="text-dark font-monospace fw-bold">${ov.borrowDate}</td>
-                <td class="text-wrap" style="max-width: 250px;">${itemBadgeLines}</td>
-                <td class="pe-3 text-center"><span class="badge bg-danger rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.72rem;"><i class="bi bi-clock-fill me-1"></i> เกินมาแล้ว ${ov.daysCount} วัน</span></td>
-              </tr>
-            `;
-          });
-
-          tableHtml += '</tbody></table></div>';
-          overdueContainer.innerHTML = tableHtml;
-
-        }).catch(err => {
-          console.error(err);
-          overdueContainer.innerHTML = '<div class="alert alert-danger border-0 text-center small">ล้มเหลวในการโหลดโครงสร้างสถิติกรุณาลองใหม่อีกครั้ง</div>';
-        });
-    }
+      let tableHtml = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.8rem;">
+            <thead class="table-danger fw-bold text-dark">
+              <tr><th class="ps-3">ชื่อผู้ยืม (สังกัด)</th><th>ภูมิภาค</th><th>รายการ</th><th class="text-center">ค้างคืน</th></tr>
+            </thead>
+            <tbody>`;
+      
+      resData.overdueList.forEach(ov => {
+        tableHtml += `<tr>
+          <td class="ps-3">${ov.userName}<br><small class="text-muted">${ov.dept}</small></td>
+          <td>${ov.region}</td>
+          <td>${ov.items[0].itemName}</td>
+          <td class="text-center"><span class="badge bg-danger rounded-pill">${ov.daysCount} วัน</span></td>
+        </tr>`;
+      });
+      
+      tableHtml += '</tbody></table></div>';
+      overdueContainer.innerHTML = tableHtml;
+    })
+    .catch(err => {
+      console.error(err);
+      overdueContainer.innerHTML = '<div class="alert alert-danger border-0 text-center">โหลดสถิติไม่สำเร็จ</div>';
+    });
+}
 
     function openEditPicker(el) {
       currentActiveEditRow = el.closest('.edit-item-row');
