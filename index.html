@@ -112,7 +112,7 @@
     .table-responsive::-webkit-scrollbar-thumb { background: rgba(163, 29, 142, 0.2); border-radius: 10px; }
   }
 
-  /* 🎯 🔥 บังคับเลเยอร์ Modal เลือกของในคลังให้แสดงอยู่หน้าสุด ไม่มุดหลังฟอร์มแก้ไข */
+  /* 🎯 บังคับเลเยอร์ Modal เลือกของในคลังให้แสดงอยู่หน้าสุด ไม่มุดหลังฟอร์มแก้ไข */
   #inventoryPickerModal {
     z-index: 1060 !important;
   }
@@ -467,7 +467,7 @@
           
           <div id="card-step2" style="display:none;" class="mb-3">
             <label class="small fw-bold text-primary mb-1">ขั้นตอนที่ 2: ผู้จัดการ</label>
-            <input type="text" id="name2" placeholder="ชื่อ-นามclsุล ผู้อนุมัติ" class="form-control mb-2 shadow-none">
+            <input type="text" id="name2" placeholder="ชื่อ-นามสิทธิ์ ผู้อนุมัติ" class="form-control mb-2 shadow-none">
             <input type="text" id="pos2" placeholder="ตำแหน่ง" class="form-control mb-2 shadow-none">
             <div class="sig-wrapper">
               <canvas id="pad2"></canvas>
@@ -546,7 +546,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 rounded-4 shadow">
         <div class="modal-header border-0 pb-0">
-          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในการยืม</h6>
+          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในบิลคำขอ</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 pt-3">
@@ -832,7 +832,7 @@
 
     function updateDashboardStats() {
       fetch(`${GAS_URL}?action=getDashboardStats&region=${encodeURIComponent(currentSelectedRegion)}`)
-        .then(res => res.json())
+        .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
         .then(stats => {
           if (stats) {
             document.getElementById('stat-pending').innerText = stats.pending || 0;
@@ -1702,7 +1702,7 @@
         });
     }
 
-    // 📦 ✒️ [เพิ่มฟังก์ชันดึงใบคำขอรอตรวจสอบระดับองค์กร] วนลูปวาดกล่องโครงสร้างดึงตามเลขที่เอกสาร RQ26xxxx สวยงามพรีเมียม
+    // 📦 ✒️ ฟังก์ชันดึงใบคำขอรอตรวจสอบ: ปรับโครงสร้างใหม่ สลับตำแหน่งหัวข้อ ปุ่มอนุมัติ และเปลี่ยนเลขลำดับสิ่งของตามรูปคอมเมนต์
     function loadPendingList() {
       const container = document.getElementById('approval-list');
       container.innerHTML = '<div class="text-center p-4 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังตรวจสอบประวัติใบงานรอพิจารณา...</div>';
@@ -1710,7 +1710,6 @@
       fetch(`${GAS_URL}?action=getAllItemsDashboard`)
         .then(res => res.json())
         .then(items => {
-          // กรองคัดสรรเฉพาะบิลที่มีคำว่า "รอ" อยู่ในสถานะปัจจุบันหลัก
           const pendingBills = items.filter(g => g.status.startsWith("รอ"));
           
           if (!pendingBills || pendingBills.length === 0) {
@@ -1724,20 +1723,42 @@
             if (group.status === "รอผู้จัดการ") { currentStep = 2; currentStepName = "ผู้จัดการ"; }
             else if (group.status === "รอผู้ควบคุมพัสดุ") { currentStep = 3; currentStepName = "ผู้ควบคุมพัสดุ"; }
             
-            let itemLines = group.items.map(it => `⚡ ${it.itemName} จำนวน <b class="text-primary">${it.itemQty}</b> ${it.itemUnit}`).join('<br>');
+            // 🎯 [ปรับแต่งข้อที่ 1] เปลี่ยนจากไอคอนสายฟ้าสีเหลือง มาเป็น "เลขลำดับรายการยืมพัสดุดิจิทัล (idx + 1)"
+            let itemLines = group.items.map((it, idx) => `
+              <div class="py-1 border-bottom border-light text-dark fw-semibold" style="font-size: 0.82rem;">
+                <span class="text-secondary me-1">${idx + 1}.</span> ${it.itemName} 
+                <span class="text-muted mx-1">จำนวน</span> <b class="text-primary">${it.itemQty}</b> 
+                <span class="text-secondary small ms-0.5">${it.itemUnit || 'หน่วย'}</span>
+              </div>
+            `).join('');
             
             return `
-              <div class="list-group-item bg-white p-4 border-0 shadow-sm rounded-4 mb-3 animate-fade-in" style="border: 1px solid #f1f5f9 !important; border-left: 5px solid var(--primary-color) !important;">
-                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                  <div>
-                    <h6 class="fw-bold text-dark mb-1">👤 ผู้ขอยืม: ${group.userName} <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">${group.status}</span></h6>
-                    <p class="small text-secondary mb-1">📄 เลขที่เอกสาร: <b class="text-primary font-monospace" style="letter-spacing:0.3px;">${group.tsKey}</b> | 🆔 รหัสพนักงาน: ${group.empId}</p>
-                    <p class="small text-secondary mb-2">🏢 สังกัด: ${group.dept} | 📍 พื้นที่ภูมิภาค: ${group.region} / ${group.area} | 📅 วันที่ยืม: ${group.date}</p>
-                    <div class="bg-light p-3 rounded-3 text-dark small font-monospace border border-light mb-0" style="font-size:0.78rem; line-height:1.6;">${itemLines}</div>
+              <div class="list-group-item bg-white p-4 border shadow-sm rounded-4 mb-3 animate-fade-in" style="border-color: #edf2f7 !important;">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <!-- 🎯 [ปรับแต่งข้อที่ 2] สลับตำแหน่ง: เอาเลขที่เอกสารคำขอขึ้นนำหน้า และย้ายชื่อผู้ขอยืมลงมาด้านล่างแทน -->
+                    <h6 class="fw-bold text-dark mb-2">
+                      <i class="bi bi-file-earmark-text text-primary me-1"></i> เลขที่เอกสาร: <span class="font-monospace text-primary fw-bold" style="letter-spacing:0.3px;">${group.tsKey}</span>
+                      <span class="badge bg-warning text-dark ms-2" style="font-size:0.65rem; vertical-align: middle;">${group.status}</span>
+                    </h6>
+                    <p class="small text-secondary mb-1">
+                      <i class="bi bi-person-fill text-muted me-1"></i> ผู้ขอยืม: <b class="text-dark">${group.userName}</b> | 🆔 รหัสพนักงาน: ${group.empId}
+                    </p>
+                    <p class="small text-secondary mb-3">
+                      🏢 สังกัด: ${group.dept} | 📍 พื้นที่ภูมิภาค: ${group.region} / ${group.area} | 📅 วันที่ยืม: ${group.date}
+                    </p>
+                    
+                    <!-- ส่วนแสดงรายการวัสดุสิ่งของเบิกยืม -->
+                    <div class="bg-light p-3 rounded-4 border border-light mb-3">
+                      <div class="text-muted small fw-bold mb-1.5"><i class="bi bi-box-seam me-1"></i> รายการพัสดุเบิกยืมในบิลคำขอนี้</div>
+                      ${itemLines}
+                    </div>
                   </div>
-                  <div class="text-end">
-                    <button class="btn btn-primary px-4 rounded-pill fw-bold text-white small shadow-sm" style="font-size:0.8rem;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
-                      <i class="bi bi-pencil-fill me-1"></i> เซ็นอนุมัติ (${currentStepName})
+                  
+                  <!-- 🎯 [ปรับแต่งข้อที่ 3] ย้ายปุ่มเซ็นอนุมัติ (กรอบวงกลมขวาเดิม) ลงมาขึงอยู่ด้านใต้สุดของรายการแถวขีดเส้นใต้สีเขียว -->
+                  <div class="col-12 mt-1">
+                    <button class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="font-size:0.85rem;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
+                      <i class="bi bi-pencil-square fs-5"></i> เซ็นอนุมัติบิลงานใบนี้ (${currentStepName})
                     </button>
                   </div>
                 </div>
@@ -1750,7 +1771,6 @@
         });
     }
 
-    // ✒️ บังคับผูกเปิดหน้าต่าง Pop-up ส่องเซ็นชื่อกระจายลงชีตหลังบ้านอิงจากแถวข้อมูลจริง
     function openApprovalModal(group, step) {
       currentItem = group;
       capturedPhotoBase64 = null;
@@ -1762,24 +1782,20 @@
           🚩 <b>ระดับสิทธิ์การตรวจอนุมัติปัจจุบัน:</b> ขั้นตอนที่ ${step}
         </div>`;
         
-      // รีเซ็ตซ่อนหน้าฟอร์มกรอกและล้างลายเซ็นของแต่ละขั้นตอน
       document.getElementById('card-step1').style.display = 'none';
       document.getElementById('card-step2').style.display = 'none';
       document.getElementById('card-step3').style.display = 'none';
       
       document.getElementById('card-step' + step).style.display = 'block';
       
-      // ล้างข้อมูลและภาพพรีวิวกล้องเก่าออกค้างสิทธิ์
       const overlay = document.getElementById('snapshot-preview-overlay');
       if(overlay) overlay.style.display = 'none';
       document.getElementById('btn-capture-snapshot').style.display = 'block';
       document.getElementById('btn-retake-snapshot').style.display = 'none';
       
-      // เปิดแสดงผลกล่อง Pop-up หลัก
       let appModal = new bootstrap.Modal(document.getElementById('approveModal'));
       appModal.show();
       
-      // โหลดสเกลรีไซส์แคนวาสเซ็นชื่อดิจิทัลหลังเปิดหน้ากากสมบูรณ์
       setTimeout(() => {
         const canvas = document.getElementById('pad' + step);
         if (canvas) {
@@ -1788,11 +1804,10 @@
           else if (step === 2) sp2.clear();
           else if (step === 3) sp3.clear();
         }
-        initCamera(currentFacingMode); // เปิดการฉายเลนส์กล้องหน้า Verification
+        initCamera(currentFacingMode); 
       }, 400);
     }
 
-    // 💾 ฟังก์ชันควบคุมขั้นตอนการตกลงบันทึกส่งกระจายประทับตราอนุมัติลงทุกไอเท็มในฐานข้อมูล
     function confirmStep(step) {
       const name = document.getElementById('name' + step).value.trim();
       const pos = document.getElementById('pos' + step).value.trim();
@@ -1809,7 +1824,7 @@
       const payloadData = {
         action: "updateApprovalStep",
         payload: {
-          rows: currentItem.rows, // อาร์เรย์ตำแหน่งแถวทั้งหมดในบิลใบนี้
+          rows: currentItem.rows, 
           step: step, name: name, pos: pos,
           sig: pad.toDataURL(), facePhoto: capturedPhotoBase64
         }
@@ -1821,9 +1836,9 @@
           btn.disabled = false; btn.innerText = originalText;
           if (res.success) {
             alert(res.result || "✅ บันทึกอนุมัติลงระบบเสร็จสมบูรณ์เรียบร้อย!");
-            stopWebcamStream(); // ดับสัญญาณปิดเลนส์กล้อง
+            stopWebcamStream(); 
             bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
-            refreshData(); // สั่งรีเฟรชออโต้ดีดตัวเลขสถิติใหม่ยกแผงทันที
+            refreshData(); 
           } else {
             alert("เกิดข้อผิดพลาด: " + res.error);
           }
