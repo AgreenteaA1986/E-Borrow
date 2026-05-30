@@ -447,7 +447,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 rounded-4 shadow">
         <div class="modal-header border-0 pb-0">
-          <h6 class="fw-bold mb-0">✒️ เซ็นอนุมัติพัสดุ</h6>
+          <h6 class="fw-bold mb-0">🖋️ เซ็นอนุมัติพัสดุ</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopWebcamStream()"></button>
         </div>
         <div class="modal-body p-4 pt-2">
@@ -462,8 +462,7 @@
               <canvas id="pad1"></canvas>
               <div class="text-end p-1"><button type="button" class="btn btn-sm text-danger border-0" onclick="sp1.clear()">ล้างลายเซ็น</button></div>
             </div>
-            <button type="button" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-bold shadow-sm" onclick="confirmStep(1)">บันทึกการอนุมัติ</button>
-          </div>
+            </div>
           
           <div id="card-step2" style="display:none;" class="mb-3">
             <label class="small fw-bold text-primary mb-1">ขั้นตอนที่ 2: ผู้จัดการ</label>
@@ -473,7 +472,6 @@
               <canvas id="pad2"></canvas>
               <div class="text-end p-1"><button type="button" class="btn btn-sm text-danger border-0" onclick="sp2.clear()">ล้างลายเซ็น</button></div>
             </div>
-            <button type="button" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-bold shadow-sm" onclick="confirmStep(2)">บันทึกการอนุมัติ</button>
           </div>
           
           <div id="card-step3" style="display:none;" class="mb-3">
@@ -484,13 +482,12 @@
               <canvas id="pad3"></canvas>
               <div class="text-end p-1"><button type="button" class="btn btn-sm text-danger border-0" onclick="sp3.clear()">ล้างลายเซ็น</button></div>
             </div>
-            <button type="button" class="btn btn-primary w-100 mt-3 rounded-pill py-2 fw-bold shadow-sm" onclick="confirmStep(3)">บันทึกการอนุมัติ</button>
           </div>
 
           <div class="mb-3 mt-3 border-top pt-3">
             <label class="small fw-bold text-primary mb-2"><i class="bi bi-camera-video-fill me-1"></i> กล้องถ่ายรูปยืนยันตัวตน (Face Verification)</label>
             <div class="rounded-4 overflow-hidden border bg-dark position-relative shadow-sm" style="width: 100%; max-width: 320px; height: 240px; margin: 0 auto;">
-              <video id="webcam-preview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <video id="webcam-preview" autoplay="" playsinline="" muted="" style="width: 100%; height: 100%; object-fit: cover;"></video>
               <div id="snapshot-preview-overlay" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; background: #000;">
                 <img id="snapshot-img" style="width: 100%; height: 100%; object-fit: cover;">
                 <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2">
@@ -501,13 +498,21 @@
                 <div class="spinner-border spinner-border-sm me-1"></div> กำลังเปิดกล้อง...
               </div>
             </div>
-            <div class="d-flex justify-content-center gap-2 mt-3">
+            
+            <div class="d-flex justify-content-center gap-2 mt-2.5 mb-3">
               <button type="button" id="btn-capture-snapshot" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold" onclick="takeSnapshot()"><i class="bi bi-camera-fill me-1"></i> กดถ่ายรูป</button>
               <button type="button" id="btn-retake-snapshot" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="retakeSnapshot()" style="display: none;"><i class="bi bi-arrow-counterclockwise me-1"></i> ถ่ายใหม่</button>
               <button type="button" id="btn-toggle-camera" class="btn btn-sm btn-light border rounded-pill px-3 text-secondary fw-bold" onclick="switchCamera()"><i class="bi bi-arrow-repeat me-1"></i> สลับกล้อง</button>
             </div>
             <canvas id="camera-capture-canvas" style="display: none;"></canvas>
           </div>
+
+          <div id="dynamic-action-btn-container" class="mt-3">
+            <button type="button" id="finalSubmitApproveBtn" class="btn btn-success w-100 py-2.5 rounded-3 fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-1.5" onclick="triggerActiveStepConfirm()">
+              <i class="bi bi-check-circle-fill fs-5"></i> บันทึกการอนุมัติและอัปเดตลงฐานข้อมูล
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
@@ -557,19 +562,19 @@
             <h6 class="small fw-bold text-secondary border-bottom pb-1 mb-2">📋 ข้อมูลผู้ขอยืม</h6>
             <div class="row g-2 mb-2.5">
               <div class="col-md-6">
-                <label class="small fw-bold text-primary mb-1">ชื่อผู้ขอยืม</label>
-                <input type="text" id="editUserName" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" required>
+                <label class="small fw-bold text-primary mb-1">ชื่อผู้ยืม</label>
+                <input type="text" id="editUserName" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" required="">
               </div>
               <div class="col-md-6">
                 <label class="small fw-bold text-primary mb-1">สังกัด/แผนก</label>
-                <input type="text" id="editDept" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" required>
+                <input type="text" id="editDept" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" required="">
               </div>
             </div>
             
             <div class="row g-2 mb-3">
               <div class="col-4">
                 <label class="small fw-bold text-primary mb-1">ภาค</label>
-                <select id="editRegion" class="form-select border-2 rounded-3 shadow-none" style="border-color:#edf2f7;" required>
+                <select id="editRegion" class="form-select border-2 rounded-3 shadow-none" style="border-color:#edf2f7;" required="">
                   <option value="ภาคเหนือ">ภาคเหนือ</option>
                   <option value="ภาคตะวันออกเฉียงเหนือ">ภาคตะวันออกเฉียงเหนือ</option>
                   <option value="ภาคกลาง">ภาคกลาง</option>
@@ -578,7 +583,7 @@
               </div>
               <div class="col-4">
                 <label class="small fw-bold text-primary mb-1">เขต</label>
-                <select id="editArea" class="form-select border-2 rounded-3 shadow-none" style="border-color:#edf2f7;" required>
+                <select id="editArea" class="form-select border-2 rounded-3 shadow-none" style="border-color:#edf2f7;" required="">
                   <option value="เขต 1">เขต 1</option>
                   <option value="เขต 2">เขต 2</option>
                   <option value="เขต 3">เขต 3</option>
@@ -586,7 +591,7 @@
               </div>
               <div class="col-4">
                 <label class="small fw-bold text-primary mb-1">วันที่ยืมพัสดุ</label>
-                <input type="text" id="editDate" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" placeholder="dd/MM/yyyy" required>
+                <input type="text" id="editDate" class="form-control rounded-3 shadow-none border-2" style="border-color:#edf2f7;" placeholder="dd/MM/yyyy" required="">
               </div>
             </div>
 
@@ -633,6 +638,7 @@
     let returnWebcamStream = null;
     let barChartInstance = null;
     let doughnutChartInstance = null;
+    let currentActiveStepGlobal = 1; // ล็อคเก็บไอดีสเต็ปอนุมัติปัจจุบัน
 
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
@@ -1702,7 +1708,6 @@
         });
     }
 
-    // 📦 ✒️ ฟังก์ชันดึงใบคำขอรอตรวจสอบ: ปรับโครงสร้างใหม่ สลับตำแหน่งหัวข้อ ปุ่มอนุมัติ และเปลี่ยนเลขลำดับสิ่งของตามรูปคอมเมนต์
     function loadPendingList() {
       const container = document.getElementById('approval-list');
       container.innerHTML = '<div class="text-center p-4 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังตรวจสอบประวัติใบงานรอพิจารณา...</div>';
@@ -1723,7 +1728,7 @@
             if (group.status === "รอผู้จัดการ") { currentStep = 2; currentStepName = "ผู้จัดการ"; }
             else if (group.status === "รอผู้ควบคุมพัสดุ") { currentStep = 3; currentStepName = "ผู้ควบคุมพัสดุ"; }
             
-            // 🎯 [ปรับแต่งข้อที่ 1] เปลี่ยนจากไอคอนสายฟ้าสีเหลือง มาเป็น "เลขลำดับรายการยืมพัสดุดิจิทัล (idx + 1)"
+            // 🎯 เปลี่ยนไอคอนสายฟ้าเป็นเลขอ้างอิงลำดับพัสดุตามคอมเมนต์ (1., 2.)
             let itemLines = group.items.map((it, idx) => `
               <div class="py-1 border-bottom border-light text-dark fw-semibold" style="font-size: 0.82rem;">
                 <span class="text-secondary me-1">${idx + 1}.</span> ${it.itemName} 
@@ -1736,7 +1741,6 @@
               <div class="list-group-item bg-white p-4 border shadow-sm rounded-4 mb-3 animate-fade-in" style="border-color: #edf2f7 !important;">
                 <div class="row g-3">
                   <div class="col-12">
-                    <!-- 🎯 [ปรับแต่งข้อที่ 2] สลับตำแหน่ง: เอาเลขที่เอกสารคำขอขึ้นนำหน้า และย้ายชื่อผู้ขอยืมลงมาด้านล่างแทน -->
                     <h6 class="fw-bold text-dark mb-2">
                       <i class="bi bi-file-earmark-text text-primary me-1"></i> เลขที่เอกสาร: <span class="font-monospace text-primary fw-bold" style="letter-spacing:0.3px;">${group.tsKey}</span>
                       <span class="badge bg-warning text-dark ms-2" style="font-size:0.65rem; vertical-align: middle;">${group.status}</span>
@@ -1748,14 +1752,12 @@
                       🏢 สังกัด: ${group.dept} | 📍 พื้นที่ภูมิภาค: ${group.region} / ${group.area} | 📅 วันที่ยืม: ${group.date}
                     </p>
                     
-                    <!-- ส่วนแสดงรายการวัสดุสิ่งของเบิกยืม -->
                     <div class="bg-light p-3 rounded-4 border border-light mb-3">
                       <div class="text-muted small fw-bold mb-1.5"><i class="bi bi-box-seam me-1"></i> รายการพัสดุเบิกยืมในบิลคำขอนี้</div>
                       ${itemLines}
                     </div>
                   </div>
                   
-                  <!-- 🎯 [ปรับแต่งข้อที่ 3] ย้ายปุ่มเซ็นอนุมัติ (กรอบวงกลมขวาเดิม) ลงมาขึงอยู่ด้านใต้สุดของรายการแถวขีดเส้นใต้สีเขียว -->
                   <div class="col-12 mt-1">
                     <button class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="font-size:0.85rem;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
                       <i class="bi bi-pencil-square fs-5"></i> เซ็นอนุมัติบิลงานใบนี้ (${currentStepName})
@@ -1774,6 +1776,7 @@
     function openApprovalModal(group, step) {
       currentItem = group;
       capturedPhotoBase64 = null;
+      currentActiveStepGlobal = step; // ปักธงล็อกจำไอดีสเต็ปปัจจุบัน
       
       document.getElementById('modalItemInfoNew').innerHTML = `
         <div class="p-2.5 rounded-3 bg-light text-dark small">
@@ -1808,6 +1811,11 @@
       }, 400);
     }
 
+    // 🎯 🔥 [สะพานเชื่อมฟังก์ชันใต้กล้อง] สกัดดึงตัวแปรสเต็ปส่งอนุมัติผ่านปุ่มเดี่ยวสีเขียวด้านล่างสุดของ Pop-up
+    function triggerActiveStepConfirm() {
+      confirmStep(currentActiveStepGlobal);
+    }
+
     function confirmStep(step) {
       const name = document.getElementById('name' + step).value.trim();
       const pos = document.getElementById('pos' + step).value.trim();
@@ -1817,9 +1825,9 @@
       if (pad.isEmpty()) return alert("⚠️ กรุณาเซ็นลายมือชื่อรับรองดิจิทัลก่อนดำเนินการต่อครับ");
       if (!capturedPhotoBase64) return alert("⚠️ กรุณากดปุ่มถ่ายรูปใบหน้าผู้อนุมัติเพื่อยืนยันตัวตน (Face Verification)");
       
-      const btn = document.querySelector(`#card-step${step} button`);
-      const originalText = btn.innerText;
-      btn.disabled = true; btn.innerText = "กำลังอัปเดตลงสเปรดชีต...";
+      const btn = document.getElementById('finalSubmitApproveBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> ระบบกำลังอัปเดตลงสเปรดชีต...';
       
       const payloadData = {
         action: "updateApprovalStep",
@@ -1833,7 +1841,7 @@
       fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
         .then(res => res.json())
         .then(res => {
-          btn.disabled = false; btn.innerText = originalText;
+          btn.disabled = false; btn.innerHTML = originalText;
           if (res.success) {
             alert(res.result || "✅ บันทึกอนุมัติลงระบบเสร็จสมบูรณ์เรียบร้อย!");
             stopWebcamStream(); 
@@ -1845,7 +1853,7 @@
         })
         .catch(err => {
           alert("Error connecting: " + err.message);
-          btn.disabled = false; btn.innerText = originalText;
+          btn.disabled = false; btn.innerHTML = originalText;
         });
     }
   </script>
