@@ -111,6 +111,14 @@
     .table-responsive::-webkit-scrollbar { height: 5px; }
     .table-responsive::-webkit-scrollbar-thumb { background: rgba(163, 29, 142, 0.2); border-radius: 10px; }
   }
+
+  /* 🎯 🔥 [จุดแก้ไขวิกฤตความลอยตัว] บังคับให้กล่องเลือกคลังพัสดุเด้งลอยขึ้นมาอยู่เหนือนำหน้าฟอร์มแก้ไขบิลเสมอ */
+  #inventoryPickerModal {
+    z-index: 1060 !important;
+  }
+  .modal-backdrop.show:nth-of-type(even) {
+    z-index: 1055 !important;
+  }
   </style>
 </head>
 <body>
@@ -314,7 +322,6 @@
 
         <div id="page-analytics" class="page">
           <h4><i class="bi bi-pie-chart-fill text-primary me-2"></i> ศูนย์รายงานวิเคราะห์สถิติภาพรวมคลัง</h4>
-          
           <div class="row g-3 mb-4">
             <div class="col-12 col-lg-8">
               <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="min-height: 380px;">
@@ -333,7 +340,6 @@
               </div>
             </div>
           </div>
-
           <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h6 class="fw-bold text-danger mb-3"><i class="bi bi-exclamation-octagon-fill me-1"></i> รายชื่อบิลประวัติการขอยืมพัสดุเกินกำหนด (ค้างส่งคืนเกิน 7 วัน)</h6>
             <div id="overdue-analytics-container"></div>
@@ -641,6 +647,15 @@
       else if (pageId === 'page-analytics') loadAnalyticsChartsPanel();
     }
 
+    // 🔥 [สคริปต์ช่วยล้างคราบบั๊กหน้าจอล็อคค้างสีมืด] ดักตรวจเวลา Modal ใดๆ ปิดตัวลง ให้เคลียร์ฉากดำทิ้งทันทีถอนรากถอนโคน
+    document.addEventListener('hidden.bs.modal', function () {
+      if (document.querySelectorAll('.modal.show').length === 0) {
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+        document.body.style.overflow = 'auto';
+        document.body.style.paddingRight = '0px';
+      }
+    });
+
     function loadInventoryStats() {
       fetch(`${GAS_URL}?action=getInventorySummary`)
         .then(res => { if(!res.ok) throw new Error('Network error'); return res.json(); })
@@ -716,7 +731,6 @@
       activeRowElement = el.closest('.item-row'); 
       if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
       
-      // คืนค่าให้ฝั่งฟอร์มเบิกยืมของปกติใช้งานได้เต็มแต้ม
       window.selectItemFromPicker = function(id, name, unit, stock) {
         if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
         if (activeRowElement) {
@@ -818,7 +832,25 @@
         }).catch(err => console.error("Error dash stats:", err));
     }
 
+    // 🔴 🎯 [ซ่อมบั๊กสะสมแต้มพรีเมียม] สั่งคำนวณและดีดตัวเลขป้ายเตือนแจ้งเตือนสีแดง ทั้งเมนู "รายการอนุมัติ" และเมนู "คืนพัสดุ"
     function updateNavBadges() {
+      // สเต็ปที่ A: วิ่งไปดึงยอดตัวเลขบิลคำขอยืมพัสดุค้างรออนุมัติสเต็ป 1, 2, 3
+      fetch(`${GAS_URL}?action=getPendingApprovalsCount`)
+        .then(res => res.json())
+        .then(data => {
+          const badgeApprove = document.getElementById('nav-badge-approve');
+          if (badgeApprove) {
+            if (data && data.count > 0) {
+              badgeApprove.innerText = data.count; // แสดงผลจำนวนตัวเลขบิลค้าง (เช่น เลข 1)
+              badgeApprove.style.display = 'flex';  // ดีดโชว์ป้ายวงกลมสีแดงสด
+            } else {
+              badgeApprove.style.display = 'none';   // ถ้าไม่มีรายการค้างอนุมัติ ให้สั่งซ่อนป้าย
+            }
+          }
+        })
+        .catch(err => console.error("Error updating approval badge:", err));
+
+      // สเต็ปที่ B: วิ่งไปดึงยอดตัวเลขบิลค้างรับคืนพัสดุกลับเข้าสต็อกคลัง (ตรรกะเดิมที่มีอยู่แล้ว)
       fetch(`${GAS_URL}?action=getItemsToReturn`)
         .then(res => res.json())
         .then(data => {
@@ -1026,11 +1058,12 @@
       new bootstrap.Modal(document.getElementById('viewDetailModal')).show();
     }
 
-    // 🛠️ ✨ [แยกล็อคสิทธิ์คลังตัวแก้ไขชัวร์ 100%] ฟังก์ชันช่วยระบุ Picker หยอดค่าลงเฉพาะกล่องใบงานซ่อมแซม
+    // 🛠️ ✨ [ฟังก์ชันวิกฤตความปลอดภัย] ป้องกันและดักจับพิกัด Picker แยกฟอร์มแก้ไขโดยตรง มั่นใจไม่ทับซ้อนกันแน่นอน
     function openEditPicker(el) {
       currentActiveEditRow = el.closest('.edit-item-row');
       if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
       
+      // บังคับเปลี่ยนสิทธิ์ปลายทางให้เมื่อสแกนพัสดุแล้ว หยอดค่ายิงตรงเข้าแถวฟอร์มแก้ไขปัจจุบัน
       window.selectItemFromPicker = function(id, name, unit, stock) {
         if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
         if (currentActiveEditRow) {
@@ -1038,6 +1071,7 @@
           currentActiveEditRow.querySelector('.edit-iName').value = name;
           currentActiveEditRow.querySelector('.edit-iUnit').innerText = unit || 'ชิ้น';
           currentActiveEditRow.querySelector('.edit-iQty').max = stock;
+          currentActiveEditRow.querySelector('.edit-iQty').placeholder = "สต็อก " + stock;
           currentActiveEditRow.querySelector('.edit-iQty').focus();
         }
         bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
@@ -1047,7 +1081,6 @@
       new bootstrap.Modal(document.getElementById('inventoryPickerModal')).show();
     }
 
-    // ➕ ฟังก์ชันเพิ่มแถวพัสดุใหม่ในหน้าต่างแก้ไข (พร้อมปุ่มถังขยะลบแถวสะดวกรวดเร็ว)
     function addEditItemRow(existingId = '', existingName = '', existingQty = '', existingUnit = 'หน่วย') {
       const container = document.getElementById('edit-items-container');
       const div = document.createElement('div');
@@ -1078,7 +1111,6 @@
       container.appendChild(div);
     }
 
-    // 📝 ✨ [ปรับปรุงใหญ่คำสั่งปุ่มดินสอ] โหลดทั้งข้อมูลหัวบิล และวนลูปสร้างรายการพัสดุเดิมทั้งหมดขึ้นมาให้แก้ไข
     function editDashboardRow(group) {
       document.getElementById('editTsKey').value = group.tsKey;
       document.getElementById('editEmpId').value = group.empId;
@@ -1101,7 +1133,6 @@
       new bootstrap.Modal(document.getElementById('editDashboardModal')).show();
     }
 
-    // รวบรวมส่งชุดข้อมูลโพสต์ (POST) อัปเดตรายการพัสดุแบบยกบิล
     document.getElementById('editDashboardForm').onsubmit = function(e) {
       e.preventDefault();
       const btn = e.target.querySelector('button[type="submit"]');
@@ -1542,7 +1573,6 @@
       fetch(`${GAS_URL}?action=getAnalyticsData`)
         .then(res => res.json())
         .then(resData => {
-          // --- มิติที่ 1: วาดกราฟแท่งแนวตั้งแสดงจำนวนยืมรายเดือนแยกภาค ---
           const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
           if (barChartInstance) barChartInstance.destroy();
 
@@ -1574,7 +1604,6 @@
             }
           });
 
-          // --- มิติที่ 2: วาดกราฟโดนัทกลมแสดงสัดส่วน % อัตราสะสมการยืม ---
           const ctxDonut = document.getElementById('regionDonutChart').getContext('2d');
           if (donutChartInstance) donutChartInstance.destroy();
 
@@ -1607,7 +1636,6 @@
             }
           });
 
-          // --- มิติที่ 3: คลี่ตารางรายชื่อประวัติคนยืมของค้างเกิน 7 วัน ---
           if (!resData.overdueList || resData.overdueList.length === 0) {
             overdueContainer.innerHTML = '<div class="alert alert-success border-0 rounded-3 text-center small mb-0">🎉 ยอดเยี่ยมมาก! สัปดาห์นี้ไม่มีพัสดุใดที่ยืมค้างคาเกิน 7 วันเลยครับ</div>';
             return;
@@ -1649,6 +1677,36 @@
           overdueContainer.innerHTML = '<div class="alert alert-danger border-0 text-center small">ล้มเหลวในการโหลดโครงสร้างสถิติกรุณาลองใหม่อีกครั้ง</div>';
         });
     }
+    // 🎯 ฟังก์ชันหลังบ้าน: ทำหน้าที่สแกนนับจำนวนบิลคำขอทั้งหมดที่ยังค้างสถานะรออนุมัติสเต็ป 1, 2, 3 เพื่อส่งไปดีดตัวเลขป้ายแดงหน้าบ้าน
+function getPendingApprovalsCount() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Data');
+    if (!sheet) return { count: 0 };
+    
+    var values = sheet.getDataRange().getValues();
+    if (values.length <= 1) return { count: 0 };
+    
+    var pendingKeys = new Set();
+    
+    for (var i = 1; i < values.length; i++) {
+      var status = String(values[i][11] || "").trim(); // คอลัมน์ L (สถานะบิล)
+      var ts = values[i][0];
+      var empId = values[i][2];
+      
+      if (!ts || !empId) continue;
+      
+      // ดักตรวจสถานะที่เข้าข่ายค้างรอการพิจารณาตรวจสอบสิทธิ์อนุมัติ
+      if (status === "รอหัวหน้าแผนก" || status === "รอผู้จัดการ" || status === "รอผู้ควบคุมพัสดุ") {
+        var key = ts.toString() + "_" + empId; // มัดกลุ่มบิลด้วยคีย์ เวลา_รหัสพนักงาน
+        pendingKeys.add(key);
+      }
+    }
+    return { count: pendingKeys.size }; // ส่งจำนวนกลุ่มบิลคำขอดิบออกไป (เช่น ค้าง 1 บิล)
+  } catch(e) { 
+    return { count: 0, error: e.toString() }; 
+  }
+}
   </script>
 </body>
 </html>
