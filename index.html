@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -190,7 +190,7 @@
               </div>
               <div class="col-12 col-sm-8 col-md-9">
                 <select id="dashboardRegionSelect" class="form-select border-2 rounded-3 shadow-none fw-bold text-secondary" style="border-color: #edf2f7; padding: 10px 15px;" onchange="selectDashboardRegion(this.value)">
-                  <option value="ทั้งหมด" selected>🌐 แสดงข้อมูลภาพรวม (ทุกภาค)</option>
+                  <option value="ทั้งหมด" selected="">🌐 แสดงข้อมูลภาพรวม (ทุกภาค)</option>
                   <option value="ภาคเหนือ">⛰️ ภาคเหนือ</option>
                   <option value="ภาคตะวันออกเฉียงเหนือ">🌾 ภาคตะวันออกเฉียงเหนือ (อีสาน)</option>
                   <option value="ภาคกลาง">🏙️ ภาคกลาง</option>
@@ -282,7 +282,7 @@
                 <label class="small fw-bold text-primary mb-1">เลขที่คำขอ (Request No.)</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light text-primary border-2" style="border-color: #edf2f7;"><i class="bi bi-file-earmark-text-fill"></i></span>
-                  <input type="text" id="borrowDocNo" class="form-control bg-light border-2 fw-bold text-primary shadow-none" readonly value="กำลังเจนเลขที่คำขอ..." style="border-color: #edf2f7; letter-spacing: 0.5px;">
+                  <input type="text" id="borrowDocNo" class="form-control bg-light border-2 fw-bold text-primary shadow-none" readonly="" value="กำลังเจนเลขที่คำขอ..." style="border-color: #edf2f7; letter-spacing: 0.5px;">
                 </div>
               </div>
 
@@ -467,7 +467,7 @@
           
           <div id="card-step2" style="display:none;" class="mb-3">
             <label class="small fw-bold text-primary mb-1">ขั้นตอนที่ 2: ผู้จัดการ</label>
-            <input type="text" id="name2" placeholder="ชื่อ-นามสกุล ผู้อนุมัติ" class="form-control mb-2 shadow-none">
+            <input type="text" id="name2" placeholder="ชื่อ-นามclsุล ผู้อนุมัติ" class="form-control mb-2 shadow-none">
             <input type="text" id="pos2" placeholder="ตำแหน่ง" class="form-control mb-2 shadow-none">
             <div class="sig-wrapper">
               <canvas id="pad2"></canvas>
@@ -546,7 +546,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 rounded-4 shadow">
         <div class="modal-header border-0 pb-0">
-          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในบิลคำขอ</h6>
+          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในการยืม</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 pt-3">
@@ -624,7 +624,7 @@
     let currentItem = null;
     let currentInventoryData = [];
     let activeRowElement = null;
-    let currentActiveEditRow = null; // 🛠️ ตัวแปรล็อคแถวซ่อมบักฟอร์มแก้ไขแยกขาด
+    let currentActiveEditRow = null; 
     let selectedDashItem = null;
     let lastInventoryType = 'all'; 
     let lastDashboardType = 'pending'; 
@@ -654,7 +654,6 @@
       else if (pageId === 'page-return') loadReturnList();
       else if (pageId === 'page-analytics') loadAnalyticsChartsPanel();
       
-      // 🎯 [เพิ่มจุดที่ 3] เรียกโหลดเจนนิ่งเลขที่เอกสารคำขอ RQ26xxxx ใหม่ทันทีเมื่อคลิกสลับเข้าหน้าฟอร์มยืมพัสดุ
       if (pageId === 'page-borrow') initBorrowForm();
     }
 
@@ -792,10 +791,10 @@
       container.appendChild(div);
     }
 
-    // 🎯 [ปรับปรุงใหญ่ส่วนข้อที่ 4] ดักดึงค่าเลขรันเอกสารจากช่อง Input ส่งเข้า Payload ยิงบันทึกแบบยกบิลพัสดุ
     document.getElementById('borrowForm').onsubmit = function(e) {
       e.preventDefault();
       const btn = e.target.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
       const items = []; const rows = document.querySelectorAll('.item-row');
       if (rows.length === 0) return alert("กรุณาเพิ่มรายการพัสดุอย่างน้อย 1 รายการ");
       try {
@@ -810,7 +809,7 @@
         const payloadData = {
           action: "saveBorrowBatch",
           payload: {
-            docNo: document.getElementById('borrowDocNo').value, // 🟢 แนบรหัสบิล RQ26xxxx ยิงลงเซลล์ช่อง A ของชีต Data
+            docNo: document.getElementById('borrowDocNo').value, 
             userName: document.getElementById('uName').value, empId: document.getElementById('uId').value,
             dept: document.getElementById('uDept').value, region: document.getElementById('uRegion').value, area: document.getElementById('uArea').value,
             date: document.getElementById('borrowDateInput').value, items: items
@@ -825,27 +824,11 @@
               document.getElementById('items-container').innerHTML = ''; addItemRow(); updateDashboardStats(); 
               showPage('page-dashboard', document.querySelector('.nav-item-side')); 
             } else { alert("เกิดข้อผิดพลาด: " + res.error); }
-            btn.disabled = false; btn.innerText = "ส่งคำขอการยืม";
+            btn.disabled = false; btn.innerHTML = originalText;
           })
-          .catch(err => { alert("Error connecting API: " + err.message); btn.disabled = false; btn.innerText = "ส่งคำขอการยืม"; });
+          .catch(err => { alert("Error connecting API: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
       } catch (err) { alert("เกิดข้อผิดพลาดภายในแอป: " + err.message); btn.disabled = false; }
     };
-
-    // 🎯 [เพิ่มส่วนข้อที่ 5] ฟังก์ชันฝั่งหน้าบ้าน ทำหน้าที่ดีดยิงส่งไปขอเลขบิลถัดมาจากหลังบ้านแบบไร้ดีเลย์
-    function initBorrowForm() {
-      document.getElementById('borrowDocNo').value = "กำลังเจนเลขเอกสารถัดไป...";
-      fetch(`${GAS_URL}?action=getNextDocNumber`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.docNo) {
-            document.getElementById('borrowDocNo').value = data.docNo; // หยอดเลขลงช่องแสดงผล Read-only
-          }
-        })
-        .catch(err => {
-          console.error("Error generating running index document id:", err);
-          document.getElementById('borrowDocNo').value = "RQ260001"; // Fallback กรณีฉุกเฉิน
-        });
-    }
 
     function updateDashboardStats() {
       fetch(`${GAS_URL}?action=getDashboardStats&region=${encodeURIComponent(currentSelectedRegion)}`)
@@ -1631,7 +1614,7 @@
           });
 
           const ctxDonut = document.getElementById('regionDonutChart').getContext('2d');
-          if (donutChartInstance) donutChartInstance.destroy();
+          if (donutChartInstance) doughnutChartInstance.destroy();
 
           const donutLabels = Object.keys(resData.regionShare);
           const donutCounts = Object.values(resData.regionShare);
@@ -1704,199 +1687,150 @@
         });
     }
 
-    // 🛠️ ✨ ฟังก์ชันช่วยระบุ Picker หยอดค่าลงเฉพาะกล่องใบงานซ่อมแซมแยกขาด
-    function openEditPicker(el) {
-      currentActiveEditRow = el.closest('.edit-item-row');
-      if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
-      
-      window.selectItemFromPicker = function(id, name, unit, stock) {
-        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
-        if (currentActiveEditRow) {
-          currentActiveEditRow.querySelector('.edit-iId').value = id;
-          currentActiveEditRow.querySelector('.edit-iName').value = name;
-          currentActiveEditRow.querySelector('.edit-iUnit').innerText = unit || 'ชิ้น';
-          currentActiveEditRow.querySelector('.edit-iQty').max = stock;
-          currentActiveEditRow.querySelector('.edit-iQty').placeholder = "สต็อก " + stock;
-          currentActiveEditRow.querySelector('.edit-iQty').focus();
-        }
-        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
-      };
-
-      renderPickerList(currentInventoryData);
-      new bootstrap.Modal(document.getElementById('inventoryPickerModal')).show();
-    }
-
-    function addEditItemRow(existingId = '', existingName = '', existingQty = '', existingUnit = 'หน่วย') {
-      const container = document.getElementById('edit-items-container');
-      const div = document.createElement('div');
-      div.className = 'edit-item-row border p-2.5 rounded-3 mb-2 bg-white position-relative shadow-sm';
-      div.innerHTML = `
-        <div class="row g-2 align-items-center">
-          <div class="col-4 col-md-3">
-            <label class="small fw-bold text-muted" style="font-size:10px">รหัสพัสดุ</label>
-            <input type="text" class="form-control form-control-sm edit-iId bg-white" value="${existingId}" onclick="openEditPicker(this)" readonly placeholder="เลือก...">
-          </div>
-          <div class="col-5 col-md-5">
-            <label class="small fw-bold text-muted" style="font-size:10px">ชื่อพัสดุ</label>
-            <input type="text" class="form-control form-control-sm edit-iName bg-white" value="${existingName}" onclick="openEditPicker(this)" readonly placeholder="เลือก...">
-          </div>
-          <div class="col-3 col-md-3">
-            <label class="small fw-bold text-muted" style="font-size:10px">จำนวน</label>
-            <div class="input-group input-group-sm">
-              <input type="number" class="form-control edit-iQty" value="${existingQty}" min="1" required>
-              <span class="input-group-text edit-iUnit" style="font-size:10px">${existingUnit}</span>
-            </div>
-          </div>
-          <div class="col-12 col-md-1 text-end mt-2 mt-md-0">
-            <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="this.closest('.edit-item-row').remove()" title="ลบรายการนี้ออก">
-              <i class="bi bi-trash3-fill fs-6"></i>
-            </button>
-          </div>
-        </div>`;
-      container.appendChild(div);
-    }
-
-    function editDashboardRow(group) {
-      document.getElementById('editTsKey').value = group.tsKey;
-      document.getElementById('editEmpId').value = group.empId;
-      document.getElementById('editUserName').value = group.userName;
-      document.getElementById('editDept').value = group.dept || "-";
-      document.getElementById('editRegion').value = group.region || "ภาคใต้";
-      document.getElementById('editArea').value = group.area || "เขต 1";
-      document.getElementById('editDate').value = group.date;
-
-      document.getElementById('edit-items-container').innerHTML = '';
-
-      if (group.items && group.items.length > 0) {
-        group.items.forEach(it => {
-          addEditItemRow(it.itemId, it.itemName, it.itemQty, it.itemUnit);
-        });
-      } else {
-        addEditItemRow();
-      }
-
-      new bootstrap.Modal(document.getElementById('editDashboardModal')).show();
-    }
-
-    document.getElementById('editDashboardForm').onsubmit = function(e) {
-      e.preventDefault();
-      const btn = e.target.querySelector('button[type="submit"]');
-      const originalText = btn.innerHTML;
-      
-      const updatedItems = [];
-      const itemRows = document.querySelectorAll('.edit-item-row');
-      
-      if (itemRows.length === 0) {
-        return alert("⚠️ บิลคำขอต้องมีรายการพัสดุอย่างน้อย 1 รายการครับ (หากต้องการยกเลิกทั้งบิลกรุณาใช้ปุ่มถังขยะสีแดงที่หน้า Dashboard)");
-      }
-
-      itemRows.forEach(row => {
-        const id = row.querySelector('.edit-iId').value;
-        const name = row.querySelector('.edit-iName').value;
-        const qty = row.querySelector('.edit-iQty').value;
-        const unit = row.querySelector('.edit-iUnit').innerText;
-        if (id && name && qty) {
-          updatedItems.push({ itemId: id, itemName: name, itemQty: qty, itemUnit: unit });
-        }
-      });
-
-      if (updatedItems.length === 0) return alert("กรุณาระบุข้อมูลพัสดุในแถวให้ครบถ้วน");
-
-      btn.disabled = true; 
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังประมวลผลอัปเดตยกบิล...';
-
-      const payloadData = {
-        action: "editBorrowBatchHeader",
-        payload: {
-          tsKey: document.getElementById('editTsKey').value,
-          empId: document.getElementById('editEmpId').value,
-          userName: document.getElementById('editUserName').value,
-          dept: document.getElementById('editDept').value,
-          region: document.getElementById('editRegion').value,
-          area: document.getElementById('editArea').value,
-          date: document.getElementById('editDate').value,
-          items: updatedItems
-        }
-      };
-
-      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
-        .then(res => res.json())
-        .then(res => {
-          if (res.success) {
-            bootstrap.Modal.getInstance(document.getElementById('editDashboardModal')).hide();
-            alert(res.result || "✅ อัปเดตโครงสร้างบิลและรายการพัสดุเรียบร้อย!");
-            if (typeof resetNormalPickerBridge === "function") resetNormalPickerBridge();
-            refreshData();
-          } else {
-            alert("❌ Error: " + res.error);
-          }
-          btn.disabled = false; btn.innerHTML = originalText;
-        })
-        .catch(err => {
-          alert("❌ Connection Error: " + err.message);
-          btn.disabled = false; btn.innerHTML = originalText;
-        });
-    };
-
-    function resetNormalPickerBridge() {
-      window.selectItemFromPicker = function(id, name, unit, stock) {
-        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
-        if (activeRowElement) {
-          activeRowElement.querySelector('.iId').value = id;
-          activeRowElement.querySelector('.iName').value = name;
-          activeRowElement.querySelector('.iUnit').innerText = unit || 'หน่วย';
-          activeRowElement.querySelector('.iQty').max = stock;
-          activeRowElement.querySelector('.iQty').placeholder = "สูงสุด " + stock;
-          activeRowElement.querySelector('.iQty').focus();
-        }
-        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
-      };
-    }
-
-    function cancelDashboardRow(tsKey, empId) {
-      document.getElementById('cancelTsKey').value = tsKey;
-      document.getElementById('cancelEmpId').value = empId;
-      document.getElementById('cancelReasonInput').value = '';
-      new bootstrap.Modal(document.getElementById('cancelReasonModal')).show();
-    }
-
-    function submitCancelOrder(btn) {
-      const tsKey = document.getElementById('cancelTsKey').value;
-      const empId = document.getElementById('cancelEmpId').value;
-      const reason = document.getElementById('cancelReasonInput').value.trim();
-      if(!reason) return alert("⚠️ กรุณาระบุเหตุผลการยกเลิกบิลก่อนดำเนินการต่อครับ");
-
-      const originalText = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังประมวลผลยกเลิก...';
-
-      const payloadData = {
-        action: "cancelBorrowBatch",
-        payload: { tsKey: tsKey, empId: empId, reason: reason }
-      };
-
-      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
-        .then(res => res.json())
-        .then(res => {
-          bootstrap.Modal.getInstance(document.getElementById('cancelReasonModal')).hide();
-          alert(res.result || "✅ ทำรายการยกเลิกสำเร็จ");
-          refreshData();
-          btn.disabled = false; btn.innerHTML = originalText;
-        }).catch(err => { alert("Error connecting: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
-    }
-
-    // 🎯 ฟังก์ชันฝั่งหน้าบ้าน ทำหน้าที่ดีดยิงส่งไปขอเลขบิลถัดมาจากหลังบ้านแบบไร้ดีเลย์
     function initBorrowForm() {
       document.getElementById('borrowDocNo').value = "กำลังเจนเลขเอกสารถัดไป...";
       fetch(`${GAS_URL}?action=getNextDocNumber`)
         .then(res => res.json())
         .then(data => {
           if (data && data.docNo) {
-            document.getElementById('borrowDocNo').value = data.docNo; // หยอดเลขลงช่องแสดงผล Read-only
+            document.getElementById('borrowDocNo').value = data.docNo; 
           }
         })
         .catch(err => {
           console.error("Error generating running index document id:", err);
-          document.getElementById('borrowDocNo').value = "RQ260001"; // Fallback กรณีฉุกเฉิน
+          document.getElementById('borrowDocNo').value = "RQ260001"; 
+        });
+    }
+
+    // 📦 ✒️ [เพิ่มฟังก์ชันดึงใบคำขอรอตรวจสอบระดับองค์กร] วนลูปวาดกล่องโครงสร้างดึงตามเลขที่เอกสาร RQ26xxxx สวยงามพรีเมียม
+    function loadPendingList() {
+      const container = document.getElementById('approval-list');
+      container.innerHTML = '<div class="text-center p-4 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2"></div>กำลังตรวจสอบประวัติใบงานรอพิจารณา...</div>';
+      
+      fetch(`${GAS_URL}?action=getAllItemsDashboard`)
+        .then(res => res.json())
+        .then(items => {
+          // กรองคัดสรรเฉพาะบิลที่มีคำว่า "รอ" อยู่ในสถานะปัจจุบันหลัก
+          const pendingBills = items.filter(g => g.status.startsWith("รอ"));
+          
+          if (!pendingBills || pendingBills.length === 0) {
+            container.innerHTML = '<div class="text-center p-5 text-muted small bg-white rounded-4 border shadow-sm">🎉 ยอดเยี่ยม! บิลทุกล็อกผ่านการเซ็นตรวจสอบครบถ้วนเรียบร้อยแล้ว</div>';
+            return;
+          }
+          
+          container.innerHTML = pendingBills.map(group => {
+            let currentStep = 1;
+            let currentStepName = "หัวหน้าแผนก";
+            if (group.status === "รอผู้จัดการ") { currentStep = 2; currentStepName = "ผู้จัดการ"; }
+            else if (group.status === "รอผู้ควบคุมพัสดุ") { currentStep = 3; currentStepName = "ผู้ควบคุมพัสดุ"; }
+            
+            let itemLines = group.items.map(it => `⚡ ${it.itemName} จำนวน <b class="text-primary">${it.itemQty}</b> ${it.itemUnit}`).join('<br>');
+            
+            return `
+              <div class="list-group-item bg-white p-4 border-0 shadow-sm rounded-4 mb-3 animate-fade-in" style="border: 1px solid #f1f5f9 !important; border-left: 5px solid var(--primary-color) !important;">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <div>
+                    <h6 class="fw-bold text-dark mb-1">👤 ผู้ขอยืม: ${group.userName} <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">${group.status}</span></h6>
+                    <p class="small text-secondary mb-1">📄 เลขที่เอกสาร: <b class="text-primary font-monospace" style="letter-spacing:0.3px;">${group.tsKey}</b> | 🆔 รหัสพนักงาน: ${group.empId}</p>
+                    <p class="small text-secondary mb-2">🏢 สังกัด: ${group.dept} | 📍 พื้นที่ภูมิภาค: ${group.region} / ${group.area} | 📅 วันที่ยืม: ${group.date}</p>
+                    <div class="bg-light p-3 rounded-3 text-dark small font-monospace border border-light mb-0" style="font-size:0.78rem; line-height:1.6;">${itemLines}</div>
+                  </div>
+                  <div class="text-end">
+                    <button class="btn btn-primary px-4 rounded-pill fw-bold text-white small shadow-sm" style="font-size:0.8rem;" onclick='openApprovalModal(${JSON.stringify(group)}, ${currentStep})'>
+                      <i class="bi bi-pencil-fill me-1"></i> เซ็นอนุมัติ (${currentStepName})
+                    </button>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+        })
+        .catch(err => {
+          console.error(err);
+          container.innerHTML = '<div class="p-3 text-center text-danger">ไม่สามารถโหลดข้อมูลคำขออนุมัติได้ในขณะนี้</div>';
+        });
+    }
+
+    // ✒️ บังคับผูกเปิดหน้าต่าง Pop-up ส่องเซ็นชื่อกระจายลงชีตหลังบ้านอิงจากแถวข้อมูลจริง
+    function openApprovalModal(group, step) {
+      currentItem = group;
+      capturedPhotoBase64 = null;
+      
+      document.getElementById('modalItemInfoNew').innerHTML = `
+        <div class="p-2.5 rounded-3 bg-light text-dark small">
+          📄 <b>เลขที่เอกสารบิล:</b> <span class="font-monospace text-primary fw-bold">${group.tsKey}</span><br>
+          👤 <b>พนักงานผู้ขอยืม:</b> ${group.userName} (ID: ${group.empId})<br>
+          🚩 <b>ระดับสิทธิ์การตรวจอนุมัติปัจจุบัน:</b> ขั้นตอนที่ ${step}
+        </div>`;
+        
+      // รีเซ็ตซ่อนหน้าฟอร์มกรอกและล้างลายเซ็นของแต่ละขั้นตอน
+      document.getElementById('card-step1').style.display = 'none';
+      document.getElementById('card-step2').style.display = 'none';
+      document.getElementById('card-step3').style.display = 'none';
+      
+      document.getElementById('card-step' + step).style.display = 'block';
+      
+      // ล้างข้อมูลและภาพพรีวิวกล้องเก่าออกค้างสิทธิ์
+      const overlay = document.getElementById('snapshot-preview-overlay');
+      if(overlay) overlay.style.display = 'none';
+      document.getElementById('btn-capture-snapshot').style.display = 'block';
+      document.getElementById('btn-retake-snapshot').style.display = 'none';
+      
+      // เปิดแสดงผลกล่อง Pop-up หลัก
+      let appModal = new bootstrap.Modal(document.getElementById('approveModal'));
+      appModal.show();
+      
+      // โหลดสเกลรีไซส์แคนวาสเซ็นชื่อดิจิทัลหลังเปิดหน้ากากสมบูรณ์
+      setTimeout(() => {
+        const canvas = document.getElementById('pad' + step);
+        if (canvas) {
+          resizeCanvas(canvas);
+          if (step === 1) sp1.clear();
+          else if (step === 2) sp2.clear();
+          else if (step === 3) sp3.clear();
+        }
+        initCamera(currentFacingMode); // เปิดการฉายเลนส์กล้องหน้า Verification
+      }, 400);
+    }
+
+    // 💾 ฟังก์ชันควบคุมขั้นตอนการตกลงบันทึกส่งกระจายประทับตราอนุมัติลงทุกไอเท็มในฐานข้อมูล
+    function confirmStep(step) {
+      const name = document.getElementById('name' + step).value.trim();
+      const pos = document.getElementById('pos' + step).value.trim();
+      let pad = (step === 1) ? sp1 : (step === 2 ? sp2 : sp3);
+      
+      if (!name || !pos) return alert("⚠️ กรุณากรอกชื่อ-นามสกุล และตำแหน่งผู้อนุมัติให้ครบถ้วนก่อนครับ");
+      if (pad.isEmpty()) return alert("⚠️ กรุณาเซ็นลายมือชื่อรับรองดิจิทัลก่อนดำเนินการต่อครับ");
+      if (!capturedPhotoBase64) return alert("⚠️ กรุณากดปุ่มถ่ายรูปใบหน้าผู้อนุมัติเพื่อยืนยันตัวตน (Face Verification)");
+      
+      const btn = document.querySelector(`#card-step${step} button`);
+      const originalText = btn.innerText;
+      btn.disabled = true; btn.innerText = "กำลังอัปเดตลงสเปรดชีต...";
+      
+      const payloadData = {
+        action: "updateApprovalStep",
+        payload: {
+          rows: currentItem.rows, // อาร์เรย์ตำแหน่งแถวทั้งหมดในบิลใบนี้
+          step: step, name: name, pos: pos,
+          sig: pad.toDataURL(), facePhoto: capturedPhotoBase64
+        }
+      };
+
+      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
+        .then(res => res.json())
+        .then(res => {
+          btn.disabled = false; btn.innerText = originalText;
+          if (res.success) {
+            alert(res.result || "✅ บันทึกอนุมัติลงระบบเสร็จสมบูรณ์เรียบร้อย!");
+            stopWebcamStream(); // ดับสัญญาณปิดเลนส์กล้อง
+            bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
+            refreshData(); // สั่งรีเฟรชออโต้ดีดตัวเลขสถิติใหม่ยกแผงทันที
+          } else {
+            alert("เกิดข้อผิดพลาด: " + res.error);
+          }
+        })
+        .catch(err => {
+          alert("Error connecting: " + err.message);
+          btn.disabled = false; btn.innerText = originalText;
         });
     }
   </script>
