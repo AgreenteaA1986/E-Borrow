@@ -112,7 +112,7 @@
     .table-responsive::-webkit-scrollbar-thumb { background: rgba(163, 29, 142, 0.2); border-radius: 10px; }
   }
 
-  /* 🎯 🔥 [จุดแก้ไขวิกฤตความลอยตัว] บังคับให้กล่องเลือกคลังพัสดุเด้งลอยขึ้นมาอยู่เหนือนำหน้าฟอร์มแก้ไขบิลเสมอ */
+  /* 🎯 🔥 บังคับเลเยอร์ Modal เลือกของในคลังให้แสดงอยู่หน้าสุด ไม่มุดหลังฟอร์มแก้ไข */
   #inventoryPickerModal {
     z-index: 1060 !important;
   }
@@ -278,6 +278,14 @@
           <div class="item-card">
             <h5 class="fw-bold mb-4">📝 บันทึกการยืม</h5>
             <form id="borrowForm">
+              <div class="mb-3">
+                <label class="small fw-bold text-primary mb-1">เลขที่คำขอ (Request No.)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light text-primary border-2" style="border-color: #edf2f7;"><i class="bi bi-file-earmark-text-fill"></i></span>
+                  <input type="text" id="borrowDocNo" class="form-control bg-light border-2 fw-bold text-primary shadow-none" readonly value="กำลังเจนเลขที่คำขอ..." style="border-color: #edf2f7; letter-spacing: 0.5px;">
+                </div>
+              </div>
+
               <div class="mb-3"><label class="small fw-bold text-primary">วันที่ยืม</label><input type="date" id="borrowDateInput" class="form-control" required></div>
               <div class="row g-2 mb-3">
                 <div class="col-12 col-md-3"><label class="small fw-bold text-primary">ชื่อผู้ยืม</label><input type="text" id="uName" class="form-control" placeholder="ชื่อ-นามสกุล" required></div>
@@ -538,7 +546,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 rounded-4 shadow">
         <div class="modal-header border-0 pb-0">
-          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในการยืม</h6>
+          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-warning me-1"></i> แก้ไขข้อมูลและรายการพัสดุในบิลคำขอ</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 pt-3">
@@ -645,9 +653,11 @@
       else if (pageId === 'page-approve') loadPendingList();
       else if (pageId === 'page-return') loadReturnList();
       else if (pageId === 'page-analytics') loadAnalyticsChartsPanel();
+      
+      // 🎯 [เพิ่มจุดที่ 3] เรียกโหลดเจนนิ่งเลขที่เอกสารคำขอ RQ26xxxx ใหม่ทันทีเมื่อคลิกสลับเข้าหน้าฟอร์มยืมพัสดุ
+      if (pageId === 'page-borrow') initBorrowForm();
     }
 
-    // 🔥 [สคริปต์ช่วยล้างคราบบั๊กหน้าจอล็อคค้างสีมืด] ดักตรวจเวลา Modal ใดๆ ปิดตัวลง ให้เคลียร์ฉากดำทิ้งทันทีถอนรากถอนโคน
     document.addEventListener('hidden.bs.modal', function () {
       if (document.querySelectorAll('.modal.show').length === 0) {
         document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
@@ -782,6 +792,7 @@
       container.appendChild(div);
     }
 
+    // 🎯 [ปรับปรุงใหญ่ส่วนข้อที่ 4] ดักดึงค่าเลขรันเอกสารจากช่อง Input ส่งเข้า Payload ยิงบันทึกแบบยกบิลพัสดุ
     document.getElementById('borrowForm').onsubmit = function(e) {
       e.preventDefault();
       const btn = e.target.querySelector('button[type="submit"]');
@@ -799,6 +810,7 @@
         const payloadData = {
           action: "saveBorrowBatch",
           payload: {
+            docNo: document.getElementById('borrowDocNo').value, // 🟢 แนบรหัสบิล RQ26xxxx ยิงลงเซลล์ช่อง A ของชีต Data
             userName: document.getElementById('uName').value, empId: document.getElementById('uId').value,
             dept: document.getElementById('uDept').value, region: document.getElementById('uRegion').value, area: document.getElementById('uArea').value,
             date: document.getElementById('borrowDateInput').value, items: items
@@ -819,6 +831,22 @@
       } catch (err) { alert("เกิดข้อผิดพลาดภายในแอป: " + err.message); btn.disabled = false; }
     };
 
+    // 🎯 [เพิ่มส่วนข้อที่ 5] ฟังก์ชันฝั่งหน้าบ้าน ทำหน้าที่ดีดยิงส่งไปขอเลขบิลถัดมาจากหลังบ้านแบบไร้ดีเลย์
+    function initBorrowForm() {
+      document.getElementById('borrowDocNo').value = "กำลังเจนเลขเอกสารถัดไป...";
+      fetch(`${GAS_URL}?action=getNextDocNumber`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.docNo) {
+            document.getElementById('borrowDocNo').value = data.docNo; // หยอดเลขลงช่องแสดงผล Read-only
+          }
+        })
+        .catch(err => {
+          console.error("Error generating running index document id:", err);
+          document.getElementById('borrowDocNo').value = "RQ260001"; // Fallback กรณีฉุกเฉิน
+        });
+    }
+
     function updateDashboardStats() {
       fetch(`${GAS_URL}?action=getDashboardStats&region=${encodeURIComponent(currentSelectedRegion)}`)
         .then(res => res.json())
@@ -832,25 +860,22 @@
         }).catch(err => console.error("Error dash stats:", err));
     }
 
-    // 🔴 🎯 [ซ่อมบั๊กสะสมแต้มพรีเมียม] สั่งคำนวณและดีดตัวเลขป้ายเตือนแจ้งเตือนสีแดง ทั้งเมนู "รายการอนุมัติ" และเมนู "คืนพัสดุ"
     function updateNavBadges() {
-      // สเต็ปที่ A: วิ่งไปดึงยอดตัวเลขบิลคำขอยืมพัสดุค้างรออนุมัติสเต็ป 1, 2, 3
       fetch(`${GAS_URL}?action=getPendingApprovalsCount`)
         .then(res => res.json())
         .then(data => {
           const badgeApprove = document.getElementById('nav-badge-approve');
           if (badgeApprove) {
             if (data && data.count > 0) {
-              badgeApprove.innerText = data.count; // แสดงผลจำนวนตัวเลขบิลค้าง (เช่น เลข 1)
-              badgeApprove.style.display = 'flex';  // ดีดโชว์ป้ายวงกลมสีแดงสด
+              badgeApprove.innerText = data.count; 
+              badgeApprove.style.display = 'flex';  
             } else {
-              badgeApprove.style.display = 'none';   // ถ้าไม่มีรายการค้างอนุมัติ ให้สั่งซ่อนป้าย
+              badgeApprove.style.display = 'none';   
             }
           }
         })
         .catch(err => console.error("Error updating approval badge:", err));
 
-      // สเต็ปที่ B: วิ่งไปดึงยอดตัวเลขบิลค้างรับคืนพัสดุกลับเข้าสต็อกคลัง (ตรรกะเดิมที่มีอยู่แล้ว)
       fetch(`${GAS_URL}?action=getItemsToReturn`)
         .then(res => res.json())
         .then(data => {
@@ -886,7 +911,8 @@
                 <table class="table table-hover align-middle mb-0" style="font-size: 0.81rem;">
                   <thead class="table-light fw-bold" style="background-color: #f8f9fa; border-bottom: 2px solid #edf2f7; white-space: nowrap;">
                     <tr class="text-dark">
-                      <th class="ps-4 py-3">ชื่อผู้ยืม</th>
+                      <th class="ps-4 py-3">เลขที่เอกสาร</th>
+                      <th class="py-3">ชื่อผู้ยืม</th>
                       <th class="py-3">รหัสพนักงาน</th>
                       <th class="py-3">สังกัด/ภูมิภาค</th>
                       <th class="py-3">รหัสพัสดุ</th>
@@ -914,7 +940,8 @@
             group.items.forEach((item, index) => {
               html += `
                 <tr>
-                  <td class="ps-4 py-3 fw-bold text-dark">${index === 0 ? group.userName : `<span class="text-muted opacity-25">”</span>`}</td>
+                  <td class="ps-4 py-3 font-monospace fw-bold text-primary">${index === 0 ? group.tsKey : `<span class="text-muted opacity-25">”</span>`}</td>
+                  <td class="py-3 fw-bold text-dark">${index === 0 ? group.userName : ""}</td>
                   <td class="py-3 text-dark">${index === 0 ? group.empId : ""}</td>
                   <td class="py-3 text-dark">${index === 0 ? `${group.dept || '-'} (${group.area || '-'})` : ""}</td>
                   
@@ -1004,6 +1031,7 @@
       let detailHtml = `
         <div class="p-3 rounded-4 bg-light mb-3" style="font-size:0.85rem;">
           <h6 class="fw-bold text-dark mb-2 border-bottom pb-1"><i class="bi bi-person-badge text-primary"></i> ข้อมูลบิลผู้ขอยืม</h6>
+          <div class="text-dark"><b>เลขที่เอกสาร:</b> <span class="font-monospace fw-bold text-primary">${group.tsKey}</span></div>
           <div class="text-dark"><b>ชื่อผู้ยืม:</b> ${group.userName} | <b>รหัสพนักงาน:</b> ${group.empId}</div>
           <div class="text-dark"><b>สังกัดแผนก:</b> ${group.dept} | <b>ภาค-เขต:</b> ${group.region} / ${group.area}</div>
           <div class="text-dark"><b>วันที่ยืมพัสดุ:</b> ${group.date}</div>
@@ -1058,12 +1086,10 @@
       new bootstrap.Modal(document.getElementById('viewDetailModal')).show();
     }
 
-    // 🛠️ ✨ [ฟังก์ชันวิกฤตความปลอดภัย] ป้องกันและดักจับพิกัด Picker แยกฟอร์มแก้ไขโดยตรง มั่นใจไม่ทับซ้อนกันแน่นอน
     function openEditPicker(el) {
       currentActiveEditRow = el.closest('.edit-item-row');
       if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
       
-      // บังคับเปลี่ยนสิทธิ์ปลายทางให้เมื่อสแกนพัสดุแล้ว หยอดค่ายิงตรงเข้าแถวฟอร์มแก้ไขปัจจุบัน
       window.selectItemFromPicker = function(id, name, unit, stock) {
         if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
         if (currentActiveEditRow) {
@@ -1677,36 +1703,202 @@
           overdueContainer.innerHTML = '<div class="alert alert-danger border-0 text-center small">ล้มเหลวในการโหลดโครงสร้างสถิติกรุณาลองใหม่อีกครั้ง</div>';
         });
     }
-    // 🎯 ฟังก์ชันหลังบ้าน: ทำหน้าที่สแกนนับจำนวนบิลคำขอทั้งหมดที่ยังค้างสถานะรออนุมัติสเต็ป 1, 2, 3 เพื่อส่งไปดีดตัวเลขป้ายแดงหน้าบ้าน
-function getPendingApprovalsCount() {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Data');
-    if (!sheet) return { count: 0 };
-    
-    var values = sheet.getDataRange().getValues();
-    if (values.length <= 1) return { count: 0 };
-    
-    var pendingKeys = new Set();
-    
-    for (var i = 1; i < values.length; i++) {
-      var status = String(values[i][11] || "").trim(); // คอลัมน์ L (สถานะบิล)
-      var ts = values[i][0];
-      var empId = values[i][2];
+
+    // 🛠️ ✨ ฟังก์ชันช่วยระบุ Picker หยอดค่าลงเฉพาะกล่องใบงานซ่อมแซมแยกขาด
+    function openEditPicker(el) {
+      currentActiveEditRow = el.closest('.edit-item-row');
+      if (document.getElementById('pickerSearchInput')) document.getElementById('pickerSearchInput').value = '';
       
-      if (!ts || !empId) continue;
-      
-      // ดักตรวจสถานะที่เข้าข่ายค้างรอการพิจารณาตรวจสอบสิทธิ์อนุมัติ
-      if (status === "รอหัวหน้าแผนก" || status === "รอผู้จัดการ" || status === "รอผู้ควบคุมพัสดุ") {
-        var key = ts.toString() + "_" + empId; // มัดกลุ่มบิลด้วยคีย์ เวลา_รหัสพนักงาน
-        pendingKeys.add(key);
-      }
+      window.selectItemFromPicker = function(id, name, unit, stock) {
+        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
+        if (currentActiveEditRow) {
+          currentActiveEditRow.querySelector('.edit-iId').value = id;
+          currentActiveEditRow.querySelector('.edit-iName').value = name;
+          currentActiveEditRow.querySelector('.edit-iUnit').innerText = unit || 'ชิ้น';
+          currentActiveEditRow.querySelector('.edit-iQty').max = stock;
+          currentActiveEditRow.querySelector('.edit-iQty').placeholder = "สต็อก " + stock;
+          currentActiveEditRow.querySelector('.edit-iQty').focus();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
+      };
+
+      renderPickerList(currentInventoryData);
+      new bootstrap.Modal(document.getElementById('inventoryPickerModal')).show();
     }
-    return { count: pendingKeys.size }; // ส่งจำนวนกลุ่มบิลคำขอดิบออกไป (เช่น ค้าง 1 บิล)
-  } catch(e) { 
-    return { count: 0, error: e.toString() }; 
-  }
-}
+
+    function addEditItemRow(existingId = '', existingName = '', existingQty = '', existingUnit = 'หน่วย') {
+      const container = document.getElementById('edit-items-container');
+      const div = document.createElement('div');
+      div.className = 'edit-item-row border p-2.5 rounded-3 mb-2 bg-white position-relative shadow-sm';
+      div.innerHTML = `
+        <div class="row g-2 align-items-center">
+          <div class="col-4 col-md-3">
+            <label class="small fw-bold text-muted" style="font-size:10px">รหัสพัสดุ</label>
+            <input type="text" class="form-control form-control-sm edit-iId bg-white" value="${existingId}" onclick="openEditPicker(this)" readonly placeholder="เลือก...">
+          </div>
+          <div class="col-5 col-md-5">
+            <label class="small fw-bold text-muted" style="font-size:10px">ชื่อพัสดุ</label>
+            <input type="text" class="form-control form-control-sm edit-iName bg-white" value="${existingName}" onclick="openEditPicker(this)" readonly placeholder="เลือก...">
+          </div>
+          <div class="col-3 col-md-3">
+            <label class="small fw-bold text-muted" style="font-size:10px">จำนวน</label>
+            <div class="input-group input-group-sm">
+              <input type="number" class="form-control edit-iQty" value="${existingQty}" min="1" required>
+              <span class="input-group-text edit-iUnit" style="font-size:10px">${existingUnit}</span>
+            </div>
+          </div>
+          <div class="col-12 col-md-1 text-end mt-2 mt-md-0">
+            <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="this.closest('.edit-item-row').remove()" title="ลบรายการนี้ออก">
+              <i class="bi bi-trash3-fill fs-6"></i>
+            </button>
+          </div>
+        </div>`;
+      container.appendChild(div);
+    }
+
+    function editDashboardRow(group) {
+      document.getElementById('editTsKey').value = group.tsKey;
+      document.getElementById('editEmpId').value = group.empId;
+      document.getElementById('editUserName').value = group.userName;
+      document.getElementById('editDept').value = group.dept || "-";
+      document.getElementById('editRegion').value = group.region || "ภาคใต้";
+      document.getElementById('editArea').value = group.area || "เขต 1";
+      document.getElementById('editDate').value = group.date;
+
+      document.getElementById('edit-items-container').innerHTML = '';
+
+      if (group.items && group.items.length > 0) {
+        group.items.forEach(it => {
+          addEditItemRow(it.itemId, it.itemName, it.itemQty, it.itemUnit);
+        });
+      } else {
+        addEditItemRow();
+      }
+
+      new bootstrap.Modal(document.getElementById('editDashboardModal')).show();
+    }
+
+    document.getElementById('editDashboardForm').onsubmit = function(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
+      
+      const updatedItems = [];
+      const itemRows = document.querySelectorAll('.edit-item-row');
+      
+      if (itemRows.length === 0) {
+        return alert("⚠️ บิลคำขอต้องมีรายการพัสดุอย่างน้อย 1 รายการครับ (หากต้องการยกเลิกทั้งบิลกรุณาใช้ปุ่มถังขยะสีแดงที่หน้า Dashboard)");
+      }
+
+      itemRows.forEach(row => {
+        const id = row.querySelector('.edit-iId').value;
+        const name = row.querySelector('.edit-iName').value;
+        const qty = row.querySelector('.edit-iQty').value;
+        const unit = row.querySelector('.edit-iUnit').innerText;
+        if (id && name && qty) {
+          updatedItems.push({ itemId: id, itemName: name, itemQty: qty, itemUnit: unit });
+        }
+      });
+
+      if (updatedItems.length === 0) return alert("กรุณาระบุข้อมูลพัสดุในแถวให้ครบถ้วน");
+
+      btn.disabled = true; 
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังประมวลผลอัปเดตยกบิล...';
+
+      const payloadData = {
+        action: "editBorrowBatchHeader",
+        payload: {
+          tsKey: document.getElementById('editTsKey').value,
+          empId: document.getElementById('editEmpId').value,
+          userName: document.getElementById('editUserName').value,
+          dept: document.getElementById('editDept').value,
+          region: document.getElementById('editRegion').value,
+          area: document.getElementById('editArea').value,
+          date: document.getElementById('editDate').value,
+          items: updatedItems
+        }
+      };
+
+      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editDashboardModal')).hide();
+            alert(res.result || "✅ อัปเดตโครงสร้างบิลและรายการพัสดุเรียบร้อย!");
+            if (typeof resetNormalPickerBridge === "function") resetNormalPickerBridge();
+            refreshData();
+          } else {
+            alert("❌ Error: " + res.error);
+          }
+          btn.disabled = false; btn.innerHTML = originalText;
+        })
+        .catch(err => {
+          alert("❌ Connection Error: " + err.message);
+          btn.disabled = false; btn.innerHTML = originalText;
+        });
+    };
+
+    function resetNormalPickerBridge() {
+      window.selectItemFromPicker = function(id, name, unit, stock) {
+        if (stock <= 0) return alert("⚠️ พัสดุหมดสต็อก");
+        if (activeRowElement) {
+          activeRowElement.querySelector('.iId').value = id;
+          activeRowElement.querySelector('.iName').value = name;
+          activeRowElement.querySelector('.iUnit').innerText = unit || 'หน่วย';
+          activeRowElement.querySelector('.iQty').max = stock;
+          activeRowElement.querySelector('.iQty').placeholder = "สูงสุด " + stock;
+          activeRowElement.querySelector('.iQty').focus();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('inventoryPickerModal')).hide();
+      };
+    }
+
+    function cancelDashboardRow(tsKey, empId) {
+      document.getElementById('cancelTsKey').value = tsKey;
+      document.getElementById('cancelEmpId').value = empId;
+      document.getElementById('cancelReasonInput').value = '';
+      new bootstrap.Modal(document.getElementById('cancelReasonModal')).show();
+    }
+
+    function submitCancelOrder(btn) {
+      const tsKey = document.getElementById('cancelTsKey').value;
+      const empId = document.getElementById('cancelEmpId').value;
+      const reason = document.getElementById('cancelReasonInput').value.trim();
+      if(!reason) return alert("⚠️ กรุณาระบุเหตุผลการยกเลิกบิลก่อนดำเนินการต่อครับ");
+
+      const originalText = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังประมวลผลยกเลิก...';
+
+      const payloadData = {
+        action: "cancelBorrowBatch",
+        payload: { tsKey: tsKey, empId: empId, reason: reason }
+      };
+
+      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
+        .then(res => res.json())
+        .then(res => {
+          bootstrap.Modal.getInstance(document.getElementById('cancelReasonModal')).hide();
+          alert(res.result || "✅ ทำรายการยกเลิกสำเร็จ");
+          refreshData();
+          btn.disabled = false; btn.innerHTML = originalText;
+        }).catch(err => { alert("Error connecting: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
+    }
+
+    // 🎯 ฟังก์ชันฝั่งหน้าบ้าน ทำหน้าที่ดีดยิงส่งไปขอเลขบิลถัดมาจากหลังบ้านแบบไร้ดีเลย์
+    function initBorrowForm() {
+      document.getElementById('borrowDocNo').value = "กำลังเจนเลขเอกสารถัดไป...";
+      fetch(`${GAS_URL}?action=getNextDocNumber`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.docNo) {
+            document.getElementById('borrowDocNo').value = data.docNo; // หยอดเลขลงช่องแสดงผล Read-only
+          }
+        })
+        .catch(err => {
+          console.error("Error generating running index document id:", err);
+          document.getElementById('borrowDocNo').value = "RQ260001"; // Fallback กรณีฉุกเฉิน
+        });
+    }
   </script>
 </body>
 </html>
