@@ -1599,15 +1599,16 @@
 
     function loadAnalyticsChartsPanel() {
   const overdueContainer = document.getElementById('overdue-analytics-container');
-  overdueContainer.innerHTML = '<div class="text-center p-4 text-muted small"><div class="spinner-border text-danger spinner-border-sm me-2"></div>กำลังวิเคราะห์ข้อมูล...</div>';
+  overdueContainer.innerHTML = 'กำลังวิเคราะห์ข้อมูล...';
 
   fetch(`${GAS_URL}?action=getAnalyticsData`)
     .then(res => res.json())
     .then(data => {
+      // data คือ Object ที่มาจาก return { chartData, breakdown, monthlyData, total }
       const colors = { "ภาคเหนือ": "#4dadf7", "ภาคตะวันออกเฉียงเหนือ": "#ff922b", "ภาคกลาง": "#cc5de8", "ภาคใต้": "#22b8cf", "ไม่ระบุ": "#adb5bd" };
       const labels = Object.keys(colors);
 
-      // 1. กราฟแท่ง % ยืมรายเดือน
+      // 1. กราฟแท่งรายเดือน
       if (barChartInstance) barChartInstance.destroy();
       barChartInstance = new Chart(document.getElementById('monthlyBarChart'), {
         type: 'bar',
@@ -1622,35 +1623,34 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 2. กราฟวงกลม จำนวนรายการทั้งหมด
+      // 2. กราฟวงกลม (สัดส่วน %)
       if (donutChartInstance) donutChartInstance.destroy();
       donutChartInstance = new Chart(document.getElementById('regionDonutChart'), {
         type: 'doughnut',
         data: {
-          labels: labels,
-          datasets: [{ data: labels.map(l => data.regionCounts[l] || 0), backgroundColor: labels.map(l => colors[l]) }]
+          labels: Object.keys(data.chartData),
+          datasets: [{ 
+            data: Object.values(data.chartData), 
+            backgroundColor: Object.keys(data.chartData).map(l => colors[l] || "#adb5bd") 
+          }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '60%' }
       });
 
-      // 3. กราฟโดนัท % เกิน 7 วัน
-      if (overdueChartInstance) overdueChartInstance.destroy();
-      overdueChartInstance = new Chart(document.getElementById('overdueDonutChart'), {
-        type: 'doughnut',
-        data: {
-          labels: labels,
-          datasets: [{ 
-            data: labels.map(l => data.totalOverdue > 0 ? ((data.overdueCounts[l] || 0) / data.totalOverdue * 100).toFixed(1) : 0), 
-            backgroundColor: labels.map(l => colors[l]) 
-          }]
-        },
-        options: { 
-          responsive: true, maintainAspectRatio: false, cutout: '60%',
-          plugins: { tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw}%` } } }
+      // 3. แสดงรายละเอียดเจาะลึก (ภาค -> เขต)
+      let breakdownHtml = '<div class="row g-2">';
+      for (let reg in data.breakdown) {
+        breakdownHtml += `<div class="col-md-6 mb-2"><strong>${reg}</strong><ul>`;
+        for (let area in data.breakdown[reg]) {
+          breakdownHtml += `<li>${area}: ${data.breakdown[reg][area]} รายการ</li>`;
         }
-      });
-      
-      overdueContainer.innerHTML = (data.totalOverdue === 0) ? '<div class="alert alert-success border-0 text-center small">🎉 ไม่มีรายการค้างส่ง</div>' : '... (ใส่โค้ดตารางเดิมของคุณได้เลย) ...';
+        breakdownHtml += `</ul></div>`;
+      }
+      breakdownHtml += '</div>';
+      overdueContainer.innerHTML = breakdownHtml;
+    })
+    .catch(err => {
+      overdueContainer.innerHTML = `<div class="alert alert-danger">โหลดสถิติไม่สำเร็จ: ${err.message}</div>`;
     });
 }
 
