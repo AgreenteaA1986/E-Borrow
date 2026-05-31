@@ -703,6 +703,9 @@
         document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
         document.body.style.overflow = 'auto';
         document.body.style.paddingRight = '0px';
+
+        stopWebcamStream();
+        stopReturnWebcam();
       }
     });
 
@@ -1614,6 +1617,7 @@
 
       const colors = { "ภาคเหนือ": "#4dadf7", "ภาคตะวันออกเฉียงเหนือ": "#ff922b", "ภาคกลาง": "#cc5de8", "ภาคใต้": "#22b8cf", "ไม่ระบุ": "#adb5bd" };
       
+      // 🟢 กราฟ 1: แท่งรายเดือน (ปรับให้ Y-axis ตันที่ 100%)
       if (barChartInstance) barChartInstance.destroy();
       const monthlyLabels = Object.keys(data.monthlyData || {});
       barChartInstance = new Chart(document.getElementById('monthlyBarChart'), {
@@ -1626,9 +1630,25 @@
             backgroundColor: colors[reg]
           }))
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100, // ล็อกแกน Y ที่ 100
+              ticks: { callback: function(value) { return value + '%'; } }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y + '%'; } }
+            }
+          }
+        }
       });
 
+      // 🟢 กราฟ 2: โดนัทสัดส่วนรวม (เพิ่ม % ใน Tooltip เวลานำเมาส์ไปชี้)
       if (donutChartInstance) donutChartInstance.destroy();
       const regionLabels = Object.keys(data.chartData || {});
       donutChartInstance = new Chart(document.getElementById('regionDonutChart'), {
@@ -1640,7 +1660,16 @@
             backgroundColor: regionLabels.length > 0 ? regionLabels.map(l => colors[l] || "#adb5bd") : ["#e2e8f0"] 
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '60%' }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          cutout: '60%',
+          plugins: {
+            tooltip: {
+              callbacks: { label: function(context) { return context.label + ': ' + context.parsed + '%'; } }
+            }
+          }
+        }
       });
 
       if (overdueChartInstance) overdueChartInstance.destroy();
@@ -1657,7 +1686,7 @@
         options: { responsive: true, maintainAspectRatio: false, cutout: '60%' }
       });
 
-      // 🎯 ส่วนสร้างแถบ Stacked Bar แบบรวมหลอดเดียวและขนาดเล็กลง
+      // 🎯 ส่วนสร้างแถบ Stacked Bar 
       let breakdownHtml = '<div class="row g-4">';
       const regions = Object.keys(data.breakdown || {});
       
@@ -1667,15 +1696,13 @@
         for (let reg of regions) {
           let rData = data.breakdown[reg];
           
-          // คำนวณเปอร์เซ็นต์สำหรับระดับภาค
-          let rTotal = rData.total || 1; // ป้องกันหารด้วย 0
+          let rTotal = rData.total || 1; 
           let retWidth = (rData.returned / rTotal) * 100;
           let unretWidth = (rData.unreturned / rTotal) * 100;
           
           breakdownHtml += `
             <div class="col-12 col-xl-6">
               <div class="card border border-light shadow-sm rounded-4 h-100" style="background-color: #ffffff;">
-                
                 <div class="card-header bg-transparent border-bottom pt-4 pb-2 d-flex justify-content-between align-items-center">
                   <h6 class="fw-bold mb-0" style="color: ${colors[reg] || '#a31d8e'};"><i class="bi bi-geo-alt-fill me-1"></i> ภาพรวม ${reg}</h6>
                   <div class="small fw-bold" style="font-size: 11px;">
@@ -1706,15 +1733,12 @@
                   </div>
 
                   <hr class="border-light mb-4">
-
                   <h6 class="small fw-bold text-dark mb-3"><i class="bi bi-diagram-2-fill text-muted me-1"></i> แยกตามเขตพื้นที่</h6>
                   <div class="row g-3">
           `;
 
           for (let area in rData.areas) {
             let aData = rData.areas[area];
-            
-            // คำนวณเปอร์เซ็นต์แยกระดับเขต
             let aTotal = aData.total || 1;
             let aRetW = (aData.returned / aTotal) * 100;
             let aUnretW = (aData.unreturned / aTotal) * 100;
@@ -1722,19 +1746,16 @@
             breakdownHtml += `
                     <div class="col-12 col-md-6">
                       <div class="ps-3 border-start border-3" style="border-color: #e2e8f0 !important;">
-                        
                         <div class="d-flex justify-content-between align-items-end mb-1">
                           <span class="small fw-bold text-dark">${area}</span>
                           <span class="fw-bold text-muted" style="font-size: 10px;">
                             <span class="text-info">${aData.returned}</span> / <span class="text-warning">${aData.unreturned}</span>
                           </span>
                         </div>
-                        
                         <div class="d-flex rounded-pill overflow-hidden shadow-sm" style="background-color: #edf2f7; height: 12px;">
                           <div class="h-100" style="background-color: #55c5ff; width: ${aRetW}%; transition: width 1s;"></div>
                           <div class="h-100" style="background-color: #ffb84d; width: ${aUnretW}%; transition: width 1s;"></div>
                         </div>
-
                       </div>
                     </div>
             `;
@@ -1746,7 +1767,12 @@
       overdueContainer.innerHTML = breakdownHtml;
     })
     .catch(err => {
-      overdueContainer.innerHTML = `<div class="alert alert-danger rounded-4 text-center small"><i class="bi bi-exclamation-circle-fill me-1"></i> โหลดสถิติไม่สำเร็จ: ${err.message}</div>`;
+      overdueContainer.innerHTML = `
+        <div class="d-flex flex-column align-items-center justify-content-center p-5 bg-light rounded-4 text-secondary">
+           <i class="bi bi-wifi-off fs-1 text-muted mb-2"></i>
+           <span class="fw-bold">ไม่สามารถดึงข้อมูลสถิติได้ในขณะนี้</span>
+           <span class="small mt-1">กรุณาลองกดปุ่ม "รีเฟรชข้อมูล" ที่มุมขวาบนอีกครั้ง</span>
+        </div>`;
     });
 }
 // 🎯 ฟังก์ชันสำหรับเตรียมความพร้อมหน้า "ยืมพัสดุ" (ดึงเลขเอกสารใหม่ & เซ็ตวันที่ปัจจุบัน)
