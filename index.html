@@ -1597,6 +1597,125 @@
           btn.disabled = false; btn.innerHTML = originalText;
         });
     }
+    function loadAnalyticsChartsPanel() {
+  const overdueContainer = document.getElementById('overdue-analytics-container');
+  overdueContainer.innerHTML = '<div class="text-center p-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>กำลังประมวลผลกราฟสถิติ...</div>';
+
+  fetch(`${GAS_URL}?action=getAnalyticsData`)
+    .then(res => res.json())
+    .then(data => {
+      // 🟢 ดักจับ Error จากฝั่ง Backend
+      if (data.error) throw new Error(data.error);
+
+      const colors = { "ภาคเหนือ": "#4dadf7", "ภาคตะวันออกเฉียงเหนือ": "#ff922b", "ภาคกลาง": "#cc5de8", "ภาคใต้": "#22b8cf", "ไม่ระบุ": "#adb5bd" };
+      
+      // --- กราฟที่ 1: แท่งรายเดือน ---
+      if (barChartInstance) barChartInstance.destroy();
+      const monthlyLabels = Object.keys(data.monthlyData || {});
+      barChartInstance = new Chart(document.getElementById('monthlyBarChart'), {
+        type: 'bar',
+        data: {
+          labels: monthlyLabels.length > 0 ? monthlyLabels : ["ไม่มีข้อมูล"],
+          datasets: Object.keys(colors).map(reg => ({
+            label: reg,
+            data: monthlyLabels.length > 0 ? monthlyLabels.map(m => data.monthlyData[m][reg] || 0) : [0],
+            backgroundColor: colors[reg]
+          }))
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // --- กราฟที่ 2: สัดส่วน (โดนัท) ---
+      if (donutChartInstance) donutChartInstance.destroy();
+      const regionLabels = Object.keys(data.chartData || {});
+      donutChartInstance = new Chart(document.getElementById('regionDonutChart'), {
+        type: 'doughnut',
+        data: {
+          labels: regionLabels.length > 0 ? regionLabels : ["ไม่มีข้อมูล"],
+          datasets: [{ 
+            data: regionLabels.length > 0 ? Object.values(data.chartData).map(v => parseFloat(v)) : [1], 
+            backgroundColor: regionLabels.length > 0 ? regionLabels.map(l => colors[l] || "#adb5bd") : ["#e2e8f0"] 
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '60%' }
+      });
+
+      // --- กราฟที่ 3: เกินกำหนด 7 วัน (โดนัท) ---
+      if (overdueChartInstance) overdueChartInstance.destroy();
+      const overdueLabels = Object.keys(data.overdueData || {});
+      overdueChartInstance = new Chart(document.getElementById('overdueDonutChart'), {
+        type: 'doughnut',
+        data: {
+          labels: overdueLabels.length > 0 ? overdueLabels : ["ไม่มีค้างส่ง"],
+          datasets: [{ 
+            data: overdueLabels.length > 0 ? Object.values(data.overdueData) : [1], 
+            backgroundColor: overdueLabels.length > 0 ? overdueLabels.map(l => colors[l] || "#fa5252") : ["#12b886"] 
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '60%' }
+      });
+
+      // --- 4. จัดเรียงรายละเอียดเจาะลึก ---
+      let breakdownHtml = '<div class="row g-3">';
+      const regions = Object.keys(data.breakdown || {});
+      
+      if (regions.length === 0) {
+        breakdownHtml = '<div class="text-center text-muted small p-3 bg-light rounded-4">ยังไม่มีข้อมูลบิลในระบบ</div>';
+      } else {
+        for (let reg of regions) {
+          breakdownHtml += `
+            <div class="col-12 col-sm-6 col-md-3">
+              <div class="card border border-light shadow-sm rounded-4 h-100" style="background-color: #fdfdfd;">
+                <div class="card-header bg-transparent border-bottom-0 pt-3 pb-1">
+                  <h6 class="fw-bold mb-0" style="color: ${colors[reg] || '#495057'};"><i class="bi bi-geo-alt-fill me-1"></i> ${reg}</h6>
+                </div>
+                <div class="card-body pt-2">
+                  <ul class="list-unstyled mb-0 small text-secondary">`;
+          for (let area in data.breakdown[reg]) {
+            breakdownHtml += `
+              <li class="d-flex justify-content-between mb-2 pb-2 border-bottom border-light">
+                <span>${area}</span> 
+                <span class="fw-bold text-dark">${data.breakdown[reg][area]} บิล</span>
+              </li>`;
+          }
+          breakdownHtml += `</ul></div></div></div>`;
+        }
+        breakdownHtml += '</div>';
+      }
+      overdueContainer.innerHTML = breakdownHtml;
+    })
+    .catch(err => {
+      overdueContainer.innerHTML = `<div class="alert alert-danger rounded-4 text-center small"><i class="bi bi-exclamation-circle-fill me-1"></i> โหลดสถิติไม่สำเร็จ: ${err.message}</div>`;
+    });
+}
+// 🎯 ฟังก์ชันสำหรับเตรียมความพร้อมหน้า "ยืมพัสดุ" (ดึงเลขเอกสารใหม่ & เซ็ตวันที่ปัจจุบัน)
+    function initBorrowForm() {
+      const docInput = document.getElementById('borrowDocNo');
+      const dateInput = document.getElementById('borrowDateInput');
+      
+      // เซ็ตวันที่ปัจจุบันให้อัตโนมัติ
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+
+      // วิ่งไปขอเลขเอกสาร (RQ...) ล่าสุดจาก Backend
+      if (docInput) {
+        docInput.value = "กำลังเจนเลขที่คำขอ...";
+        fetch(`${GAS_URL}?action=getNextDocNumber`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.docNo) {
+              docInput.value = data.docNo;
+            } else {
+              docInput.value = "ไม่สามารถดึงเลขเอกสารได้";
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching Doc No:", err);
+            docInput.value = "การเชื่อมต่อล้มเหลว";
+          });
+      }
+    }
   </script>
 </body>
 </html>
