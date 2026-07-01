@@ -1044,14 +1044,27 @@
           <span class="text-primary fw-bold">${p.itemQty} <span class="text-dark small">${p.itemUnit}</span></span>
         </div>`).join('');
 
-      let returnSignaturesStampHtml = `<div class="text-center text-muted small border rounded-3 p-3 bg-white opacity-50 d-flex align-items-center justify-content-center" style="height:100%; min-height:150px; border-style: dashed !important; font-size: 11px;">รอตรวจรับเข้าคลัง</div>`;
-      if(group.status === "คืนแล้ว" || (group.retReceiver && group.retReceiver !== "-")) {
-        returnSignaturesStampHtml = `
-          <div class="p-2 border rounded-4 bg-white text-center shadow-sm" style="border-color: #b2f2bb !important; background: #f8fbf9 !important; min-height: 155px;">
-            <small class="fw-bold text-success d-block mb-1" style="font-size:0.65rem;"><i class="bi bi-patch-check-fill"></i> เจ้าหน้าที่พัสดุรับคืน</small>
-            <div class="mx-auto mb-1" style="width:60px; height:95px;">${getImgHtml(group.retPhoto)}</div>
-            ${getSigHtml(group.retSig, 40)}
-            <span class="small d-block text-dark text-truncate fw-bold" style="font-size:0.72rem; max-width:100px; margin:0 auto;">(${group.retReceiver})</span>
+      // 🎯 ส่วนการแสดงผลประวัติการคืน (จะแสดงก็ต่อเมื่อสถานะเป็น "คืนแล้ว" เท่านั้น)
+      let returnSectionHtml = '';
+      if(group.status === "คืนแล้ว" && group.retReceiver && group.retReceiver !== "-") {
+        returnSectionHtml = `
+          <div class="p-3 rounded-4 bg-light mt-3" style="font-size:0.85rem;">
+            <h6 class="fw-bold text-dark mb-2 border-bottom pb-1"><i class="bi bi-arrow-counterclockwise text-danger"></i> ประวัติการเซ็นตรวจรับคืนสินค้าคลัง</h6>
+            <div class="row g-2 align-items-center">
+              <div class="col-7 text-dark" style="line-height: 1.7;">
+                <div><b>วันที่แจ้งส่งคืน:</b> <span class="text-secondary">${group.returnDate || '-'}</span></div>
+                <div><b>ผู้ตรวจสอบรับคืน:</b> <span class="fw-bold text-dark">${group.retReceiver || '-'}</span></div>
+                <div><b>วันที่เข้าสต็อก:</b> <span class="text-success fw-bold">${group.receiveDate || '-'}</span></div>
+              </div>
+              <div class="col-5">
+                <div class="p-2 border rounded-4 bg-white text-center shadow-sm" style="border-color: #b2f2bb !important; background: #f8fbf9 !important; min-height: 155px;">
+                  <small class="fw-bold text-success d-block mb-1" style="font-size:0.65rem;"><i class="bi bi-patch-check-fill"></i> เจ้าหน้าที่พัสดุรับคืน</small>
+                  <div class="mx-auto mb-1" style="width:60px; height:95px;">${getImgHtml(group.retPhoto)}</div>
+                  ${getSigHtml(group.retSig, 40)}
+                  <span class="small d-block text-dark text-truncate fw-bold" style="font-size:0.72rem; max-width:100px; margin:0 auto;">(${group.retReceiver})</span>
+                </div>
+              </div>
+            </div>
           </div>`;
       }
 
@@ -1092,17 +1105,8 @@
             <span class="d-block text-danger fw-normal" style="font-size: 0.65rem;">📅 ${group.appr3?.date && group.appr3.date !== "-" ? group.appr3.date : "-"}</span>
           </div>
         </div>
-        <div class="p-3 rounded-4 bg-light" style="font-size:0.85rem;">
-          <h6 class="fw-bold text-dark mb-2 border-bottom pb-1"><i class="bi bi-arrow-counterclockwise text-danger"></i> ประวัติการเซ็นตรวจรับคืนสินค้าคลัง</h6>
-          <div class="row g-2 align-items-center">
-            <div class="col-7 text-dark" style="line-height: 1.7;">
-              <div><b>วันที่แจ้งส่งคืน:</b> <span class="text-secondary">${group.returnDate || '-'}</span></div>
-              <div><b>ผู้ตรวจสอบรับคืน:</b> <span class="fw-bold text-dark">${group.retReceiver || '-'}</span></div>
-              <div><b>วันที่เข้าสต็อก:</b> <span class="text-success fw-bold">${group.receiveDate || '-'}</span></div>
-            </div>
-            <div class="col-5">${returnSignaturesStampHtml}</div>
-          </div>
-        </div>`;
+        ${returnSectionHtml}`; // เพิ่มประวัติการคืนเฉพาะกรณีที่มีข้อมูล
+
       document.getElementById('viewDetailModalBody').innerHTML = detailHtml;
       bootstrap.Modal.getOrCreateInstance(document.getElementById('viewDetailModal')).show();
     }
