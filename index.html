@@ -714,6 +714,11 @@
       else sidebar.classList.toggle('collapsed');
     }
 
+    function openDashReturnModalSafe(tsKey, empId) {
+        const data = getGroupDataSafe(tsKey, empId);
+        if(data) openDashReturnModal(data);
+    }
+
     function showPage(pageId, el) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
       document.getElementById(pageId).classList.add('active-page');
@@ -998,9 +1003,13 @@
                   <td class="pe-4 py-2 text-center">
                     ${index === 0 ? `
                       <div class="btn-group gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" onclick="viewFullDetailsDetailSafe('${group.tsKey}', '${group.empId}')"><i class="bi bi-eye-fill"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-warning rounded-3 px-2 py-1" onclick="editDashboardRowSafe('${group.tsKey}', '${group.empId}')"><i class="bi bi-pencil-fill"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" onclick='cancelDashboardRow("${group.tsKey}", "${group.empId}")' ${group.status.includes("ยกเลิก") || group.status === "คืนแล้ว" ? "disabled" : ""}><i class="bi bi-trash-fill"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1" title="ดูรายละเอียดบิล" onclick="viewFullDetailsDetailSafe('${group.tsKey}', '${group.empId}')"><i class="bi bi-eye-fill"></i></button>
+                        
+                        <!-- 🟢 ปุ่มสีเขียวสำหรับแจ้งคืนพัสดุ -->
+                        <button type="button" class="btn btn-sm btn-outline-success rounded-3 px-2 py-1" title="แจ้งส่งคืนพัสดุ" onclick="openDashReturnModalSafe('${group.tsKey}', '${group.empId}')" ${group.status === "อนุมัติสมบูรณ์" ? "" : "disabled"}><i class="bi bi-arrow-return-left"></i></button>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-warning rounded-3 px-2 py-1" title="แก้ไขรายการ" onclick="editDashboardRowSafe('${group.tsKey}', '${group.empId}')"><i class="bi bi-pencil-fill"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" title="ยกเลิกบิล" onclick='cancelDashboardRow("${group.tsKey}", "${group.empId}")' ${group.status.includes("ยกเลิก") || group.status === "คืนแล้ว" ? "disabled" : ""}><i class="bi bi-trash-fill"></i></button>
                       </div>` : ""}
                   </td></tr>`;
             });
@@ -1204,6 +1213,72 @@
           bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelReasonModal')).hide();
           alert(res.result || "✅ ยกเลิกสำเร็จ"); refreshData(); btn.disabled = false; btn.innerHTML = originalText;
         }).catch(err => { alert("Error connecting: " + err.message); btn.disabled = false; btn.innerHTML = originalText; });
+    }
+
+    // ==========================================
+    // ส่วนฟังก์ชัน แจ้งส่งคืนพัสดุ (ฝั่งผู้ยืม - หน้า Dashboard)
+    // ==========================================
+    function openDashReturnModal(group) {
+      selectedDashItem = group;
+      // โชว์ข้อมูลหัวบิล
+      document.getElementById('dashReturnInfo').innerHTML = `
+        <div class="mb-3 p-3 bg-light rounded-3 border border-light">
+          <div class="small text-secondary mb-1">เลขที่เอกสาร: <span class="fw-bold text-primary font-monospace">${group.tsKey}</span></div>
+          <div class="small text-secondary">ผู้ขอยืม: <span class="fw-bold text-dark">${group.userName}</span></div>
+        </div>
+      `;
+      // โชว์รายการให้ติ๊กเลือกคืน
+      const checklist = document.getElementById('dash-item-checklist');
+      checklist.innerHTML = group.items.map((it, idx) => `
+        <label class="list-group-item d-flex gap-2 border-0 border-bottom py-2.5" style="cursor: pointer;">
+          <input class="form-check-input flex-shrink-0 dash-ret-chk" type="checkbox" checked value="${it.itemId}" data-name="${it.itemName}" data-qty="${it.itemQty}" data-unit="${it.itemUnit}">
+          <span class="text-dark small"><b>${idx+1}.</b> ${it.itemName} (${it.itemQty} ${it.itemUnit})</span>
+        </label>
+      `).join('');
+      
+      // เปิดหน้าต่าง Modal
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('dashReturnModal')).show();
+    }
+
+    function confirmReturnFromDash(btn) {
+      const checkedBoxes = document.querySelectorAll('.dash-ret-chk:checked');
+      if (checkedBoxes.length === 0) return alert("⚠️ กรุณาเลือกรายการที่ต้องการส่งคืนอย่างน้อย 1 รายการครับ");
+      
+      const originalText = btn.innerHTML;
+      btn.disabled = true; 
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังส่งเรื่องแจ้งคืน...';
+      
+      const rItems = [];
+      checkedBoxes.forEach(cb => {
+        rItems.push({ itemId: cb.value, itemName: cb.getAttribute('data-name'), itemQty: cb.getAttribute('data-qty'), itemUnit: cb.getAttribute('data-unit') });
+      });
+
+      const payloadData = {
+        action: "updateStatusToReturning",
+        payload: { 
+          tsKey: selectedDashItem.tsKey, 
+          empId: selectedDashItem.empId, 
+          userName: selectedDashItem.userName, 
+          items: rItems 
+        }
+      };
+
+      fetch(GAS_URL, { method: "POST", body: JSON.stringify(payloadData) })
+        .then(res => res.json())
+        .then(res => {
+          btn.disabled = false; btn.innerHTML = originalText;
+          if (res.success) {
+            alert("✅ ส่งเรื่องแจ้งคืนพัสดุเรียบร้อย! กรุณานำของไปส่งคืนที่คลังเพื่อให้เจ้าหน้าที่ตรวจสอบต่อไปครับ");
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('dashReturnModal')).hide();
+            refreshData();
+          } else {
+            alert("❌ Error: " + res.error);
+          }
+        })
+        .catch(err => {
+          alert("❌ Connection Error: " + err.message);
+          btn.disabled = false; btn.innerHTML = originalText;
+        });
     }
 
     // ==========================================
